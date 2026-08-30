@@ -40,7 +40,7 @@ npm run test:e2e
 npm run build
 ```
 
-開発サーバーは `http://localhost:5173` で起動します。PlaywrightのE2E確認は環境にブラウザがある場合に `npm run test:e2e` で実行できます。
+開発サーバーは `http://localhost:5000` で起動します。PlaywrightのE2E確認は環境にブラウザがある場合に `npm run test:e2e` で実行できます。
 
 ## Replit
 

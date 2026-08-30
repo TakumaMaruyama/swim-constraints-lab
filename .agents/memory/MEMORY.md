@@ -1,0 +1,1 @@
+- [Node 20 test DOM compatibility](node20-jsdom-compatibility.md) — keep jsdom on the Node 20-compatible line unless the Replit runtime is upgraded.
