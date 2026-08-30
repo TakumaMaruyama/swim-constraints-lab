@@ -151,8 +151,8 @@ describe("adjustTask", () => {
     expect(rendered.activeAdjustments).toHaveLength(7);
     expect(rendered.activeAdjustments).toContain("個別に易しく");
     expect(rendered.effectiveEquipment).toEqual(["none"]);
-    expect(rendered.effectiveInstructions).toEqual(expect.arrayContaining([expect.stringContaining("成果は変えず"), expect.stringContaining("本人が変える条件")]));
-    expect(rendered.effectiveParticipantCue).toBe("今の試行では、どの情報が一番役に立った？");
+    expect(rendered.effectiveInstructions).toEqual(expect.arrayContaining([expect.stringContaining("ねらいは変えず"), expect.stringContaining("本人が変えること")]));
+    expect(rendered.effectiveParticipantCue).toBe("今の1回で、一番やりやすかったのはどこ？");
     expect(rendered.variabilityLevel).toBe("medium");
     expect(rendered.presentationOrder).toBe("natural");
   });

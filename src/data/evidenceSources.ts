@@ -1,11 +1,11 @@
 import type { EvidenceCategory, EvidenceSource } from "../types";
 
 export const evidenceCategoryLabels: Record<EvidenceCategory, string> = {
-  swimmingIntervention: "水泳の介入研究",
-  swimmingResearch: "水泳の観察研究・レビュー",
-  motorLearning: "一般運動学習からの応用",
-  officialFramework: "海外の公式指導体系",
-  coachPractice: "海外コーチの実践例",
+  swimmingIntervention: "水泳の練習効果を調べた研究",
+  swimmingResearch: "水泳の動きを調べた研究",
+  motorLearning: "水泳以外も含む運動学習の研究",
+  officialFramework: "海外の公式水泳指導ガイド",
+  coachPractice: "海外コーチの実践紹介",
 };
 
 export const evidenceSources: EvidenceSource[] = [
@@ -16,7 +16,7 @@ export const evidenceSources: EvidenceSource[] = [
     authorsOrOrganisation: "Seifert et al.",
     year: 2014,
     url: "https://doi.org/10.1007/s40279-014-0210-x",
-    supports: ["泳者・課題・環境の制約に応じて協調が機能的に変化し得るという見方", "ばらつきを機能との関係で観察する視点"],
+    supports: ["選手・練習内容・周りの状況が変わると、腕や脚の動きも役立つ形に変わることがある", "毎回の動きの違いを、できた結果と一緒に見る考え方"],
     doesNotProve: ["特定ドリルが全選手のフォームを必ず改善すること", "ばらつきが多いほど常に良いこと"],
     verifiedAt: "2026-08-30",
   },
@@ -27,8 +27,8 @@ export const evidenceSources: EvidenceSource[] = [
     authorsOrOrganisation: "Pinder et al.",
     year: 2011,
     url: "https://doi.org/10.1123/jsep.33.1.146",
-    supports: ["実場面で利用する知覚情報と行為の結び付きを練習に残す考え方", "課題代表性を検討する枠組み"],
-    doesNotProve: ["本アプリの個別課題が競技成績を向上させること", "実戦に似せるだけで転移が保証されること"],
+    supports: ["レースや実際の場面で使う目印・合図を、練習にも残す考え方", "練習が本番とかけ離れていないかを確認する考え方"],
+    doesNotProve: ["このアプリの練習でタイムが必ず上がること", "本番に似せれば、練習した動きが必ず本番でもできること"],
     verifiedAt: "2026-08-30",
   },
   {
@@ -38,8 +38,8 @@ export const evidenceSources: EvidenceSource[] = [
     authorsOrOrganisation: "Minkels, van der Kamp, de Vries & Beek",
     year: 2025,
     url: "https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2025.1505301/full",
-    supports: ["子どもの水泳学習研究の全体像と方法論上の限界", "非線形プログラムを含む現代的学習法の位置付け"],
-    doesNotProve: ["制約主導アプローチが他の方法より常に優れること", "個々の遊び課題の効果"],
+    supports: ["5〜12歳の子どもが泳ぎを学ぶ研究について、分かっていることと不足していること", "いろいろな教え方の中で、本人に試してもらう方法がどう扱われているか"],
+    doesNotProve: ["条件を変えながら試す教え方が、他の教え方より常に良いこと", "このアプリに載せた一つひとつの遊びの効果"],
     verifiedAt: "2026-08-30",
   },
   {
@@ -49,7 +49,7 @@ export const evidenceSources: EvidenceSource[] = [
     authorsOrOrganisation: "Signorini et al.",
     year: 2026,
     url: "https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2026.1916430/full",
-    supports: ["意味のある水中課題、制約操作、問い、保持・転移を組み合わせる授業設計", "直接指導と探索を状況に応じて統合する考え方"],
+    supports: ["目的が分かる水中課題、条件の変更、質問、繰り返し、本番での実施を組み合わせる授業づくり", "見本を教える方法と、本人に試してもらう方法を使い分ける考え方"],
     doesNotProve: ["本アプリの72課題それぞれの有効性", "安全上の判断をアプリに任せられること"],
     verifiedAt: "2026-08-30",
   },
@@ -59,7 +59,7 @@ export const evidenceSources: EvidenceSource[] = [
     title: "Swim England Learn to Swim Framework",
     authorsOrOrganisation: "Swim England",
     url: "https://www.swimming.org/learntoswim/swim-england-learn-to-swim-framework/",
-    supports: ["浮力・バランス、回転、呼吸、移動などを組み合わせる幅広い技能領域", "遊びを用いた段階的な学習"],
+    supports: ["浮く・姿勢を保つ・回る・息をする・進むなどを幅広く練習すること", "遊びを使い、少しずつできることを増やす進め方"],
     doesNotProve: ["日本国内施設での資格基準との同一性", "特定の進級順が全員に適すること"],
     verifiedAt: "2026-08-30",
   },
@@ -70,8 +70,8 @@ export const evidenceSources: EvidenceSource[] = [
     authorsOrOrganisation: "Andrew Sheaff",
     year: 2023,
     url: "https://www.routledge.com/A-Constraints-Led-Approach-to-Swim-Coaching/Sheaff/p/book/9780367724788",
-    supports: ["競泳コーチングで制約を課題設計に使う実践的な整理", "成果を保ちながら条件を変える発想"],
-    doesNotProve: ["本アプリの課題が著者の公式メニューであること", "実践例が介入研究と同じ証拠水準であること"],
+    supports: ["競泳練習で距離・用具・目印などの条件を変える方法", "できてほしい結果は変えず、練習条件を変える考え方"],
+    doesNotProve: ["このアプリの練習が著者の公式メニューであること", "コーチの実践例だけで、練習効果が科学的に確かめられたこと"],
     verifiedAt: "2026-08-30",
   },
   {
@@ -80,7 +80,7 @@ export const evidenceSources: EvidenceSource[] = [
     title: "The Book: A Constraints-Led Approach to Swim Coaching",
     authorsOrOrganisation: "Andrew Sheaff",
     url: "https://www.coachandrewsheaff.com/the-book",
-    supports: ["同書の実践背景と制約主導のコーチング観"],
+    supports: ["同じ著者が、練習条件を変える指導をどのように考えているか"],
     doesNotProve: ["個別課題の科学的効果", "唯一の正しい指導法"],
     verifiedAt: "2026-08-30",
   },
@@ -91,8 +91,8 @@ export const evidenceSources: EvidenceSource[] = [
     authorsOrOrganisation: "Freudenheim et al.",
     year: 2010,
     url: "https://doi.org/10.1260/1747-9541.5.4.533",
-    supports: ["水泳における外的注意焦点を検討する根拠", "結果や環境へ注意を向ける声かけの選択肢"],
-    doesNotProve: ["外的キューが常に身体感覚や無指示より優れること", "すべての年齢・技能で同じ効果が出ること"],
+    supports: ["手足そのものではなく、進む先や水の動きに注目する声かけを水泳で調べたこと", "結果や周りの目印を使った声かけも選べること"],
+    doesNotProve: ["進む先や水の動きに注目する声かけが、どんな時でも一番良いこと", "年齢や泳力が違っても同じ効果が出ること"],
     verifiedAt: "2026-08-30",
   },
 ];

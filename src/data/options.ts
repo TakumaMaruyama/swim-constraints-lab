@@ -13,38 +13,56 @@ import type {
 } from "../types";
 
 export const modes: SelectOption<Mode>[] = [
-  { value: "competitive", label: "競泳版", description: "競泳選手と競泳コーチ向け" },
-  { value: "learnToSwim", label: "習い事水泳版", description: "子どもと水泳指導者向け" },
+  { value: "competitive", label: "競泳版", description: "競泳の練習・レース向け" },
+  { value: "learnToSwim", label: "習い事水泳版", description: "子どものレッスン向け" },
 ];
 
 export const goals: SelectOption<GoalId>[] = [
-  { value: "firstSuccess", label: "初めて成立させる" },
-  { value: "stabilize", label: "成功を安定させる" },
-  { value: "explore", label: "別の方法を探索する" },
-  { value: "adapt", label: "条件変化へ適応する" },
-  { value: "transfer", label: "実戦・実場面へつなげる" },
-  { value: "discover", label: "本人に情報を発見させる" },
-  { value: "maintainSpeed", label: "速度を維持する" },
-  { value: "accuracy", label: "正確性を高める" },
-  { value: "connect", label: "動作間を途切れずつなぐ" },
-  { value: "confidence", label: "自信や安心感を高める" },
+  { value: "firstSuccess", label: "まず1回できるようにしたい" },
+  { value: "stabilize", label: "できる回数を増やしたい" },
+  { value: "explore", label: "本人に合うやり方を探したい" },
+  { value: "adapt", label: "条件が変わってもできるようにしたい" },
+  { value: "transfer", label: "レースや実際の場面でできるようにしたい" },
+  { value: "discover", label: "本人にコツを見つけてほしい" },
+  { value: "maintainSpeed", label: "スピードを落とさず続けたい" },
+  { value: "accuracy", label: "ねらった場所や動きをそろえたい" },
+  { value: "connect", label: "動きを止めずつなげたい" },
+  { value: "confidence", label: "不安を減らし、自信をつけたい" },
 ];
 
 export const competitivePhases: SelectOption<CompetitivePhase>[] = [
   { value: "start", label: "スタート" },
   { value: "turn", label: "ターン" },
-  { value: "underwater", label: "水中動作" },
-  { value: "breakout", label: "ブレイクアウト" },
-  { value: "swimming", label: "泳動作" },
+  { value: "underwater", label: "水中動作（スタート・ターン後）" },
+  { value: "breakout", label: "水中から泳ぎ出し" },
+  { value: "swimming", label: "通常の泳ぎ" },
   { value: "finish", label: "フィニッシュ" },
 ];
 
-export const learnDomains = [
+const learnDomainValues = [
   "水慣れ", "顔つけ", "水中呼気", "ボビング", "浮力", "バランス", "うつ伏せ浮き", "背浮き",
   "うつ伏せと仰向けの切替", "回転", "方向づけ", "ストリームライン", "壁蹴り", "バタ足",
   "任意の方法で進む", "呼吸しながら進む", "クロール", "背泳ぎ", "平泳ぎ", "バタフライ",
   "壁への接近", "ターン", "泳法切替", "連続泳", "30mクロール", "60m個人メドレー",
-].map((label) => ({ value: label, label }));
+];
+
+const learnDomainLabels: Record<string, string> = {
+  水中呼気: "水の中で息を吐く",
+  浮力: "力を抜いて浮く",
+  バランス: "水中で姿勢を保つ",
+  うつ伏せと仰向けの切替: "うつ伏せ・仰向けの切り替え",
+  方向づけ: "進む方向を変える",
+  任意の方法で進む: "好きな方法で進む",
+  呼吸しながら進む: "息継ぎしながら進む",
+  壁への接近: "止まらず壁へ近づく",
+  泳法切替: "泳ぎ方の切り替え",
+  連続泳: "止まらず泳ぎ続ける",
+};
+
+export const learnDomains = learnDomainValues.map((value) => ({
+  value,
+  label: learnDomainLabels[value] ?? value,
+}));
 
 const learnDomainFamilies: string[][] = [
   [
@@ -69,27 +87,45 @@ export const compatibleLearnDomains = (primaryDomain: string): string[] => {
 };
 
 export const competitiveLevels: SelectOption<CompetitiveLevel>[] = [
-  { value: "intro", label: "導入", description: "局面の成果を初めて成立させる段階" },
-  { value: "develop", label: "発展", description: "複数条件で安定・探索する段階" },
-  { value: "race", label: "レース実践", description: "速度・疲労・相手情報へ接続する段階" },
+  { value: "intro", label: "導入", description: "この場面をまず1回できるようにする" },
+  { value: "develop", label: "発展", description: "できるやり方を増やし、安定させる" },
+  { value: "race", label: "レース実践", description: "速さ・疲れ・隣の選手がいる中で試す" },
 ];
 
 export const learnLevels: SelectOption<LearnToSwimLevel>[] = [
-  { value: "beginner", label: "初級", description: "補助具なしで5m程度進み、自分で呼吸することを目指す" },
-  { value: "intermediate", label: "中級", description: "足をつかず、呼吸しながら30mクロールを目指す" },
-  { value: "advanced", label: "上級", description: "四泳法・ターン・泳法切替で60m個人メドレーを目指す" },
+  { value: "beginner", label: "初級", description: "補助具なしで5mほど進み、自分で息継ぎすることを目指す" },
+  { value: "intermediate", label: "中級", description: "足を底につかず、息継ぎしながら30mクロールを目指す" },
+  { value: "advanced", label: "上級", description: "4泳法・ターン・泳法切替で60m個人メドレーを目指す" },
 ];
 
-export const competitiveObservedTags = [
-  "合図後の初動が遅い", "入水時に形が崩れる", "入水が深すぎる", "入水が浅すぎる",
-  "プッシュオフ後に減速する", "水中キックが途中で変わる", "浮上が早すぎる", "浮上が遅すぎる",
-  "浮上時に一度止まる", "第一ストロークへつながらない", "第一呼吸で速度が落ちる",
-  "壁前で小さな調整が増える", "ターンで進入速度を失う", "壁を押す方向が毎回変わる",
-  "ターン後に深くなりすぎる", "速度を上げるとストロークが短くなる",
-  "疲れるとストローク数が急増する", "テンポを変えると崩れる", "呼吸側を変えると崩れる",
-  "隣に選手がいるとリズムが変わる", "フィニッシュで流す", "フィニッシュで壁に詰まる",
-  "一つの方法でしか成功しない", "フレッシュ時はできるが疲労時に崩れる",
-];
+export const competitiveObservedTagsByPhase: Record<CompetitivePhase, string[]> = {
+  start: [
+    "合図後の初動が遅い", "入水時に形が崩れる", "入水が深すぎる", "入水が浅すぎる",
+    "隣に選手がいるとリズムが変わる", "フレッシュ時はできるが疲労時に崩れる",
+  ],
+  turn: [
+    "壁前で小さな調整が増える", "壁を押す方向が毎回変わる",
+    "ターン後に深くなりすぎる", "最後の呼吸", "ターン前後の速度の連続性", "疲れるとストロークが短くなる",
+  ],
+  underwater: [
+    "プッシュオフ後に減速する", "水中キックが途中で変わる", "浮上が早すぎる", "浮上が遅すぎる",
+    "条件が変わると崩れる",
+  ],
+  breakout: [
+    "浮上時に一度止まる", "第一ストロークへつながらない", "第一呼吸で速度が落ちる",
+    "レースペース時", "最終キック", "隣に選手がいるとリズムが変わる",
+  ],
+  swimming: [
+    "速度を上げるとストロークが短くなる", "テンポを変えると崩れる",
+    "呼吸側を変えると崩れる", "腕の協調", "ペース変化", "条件が変わると崩れる",
+  ],
+  finish: [
+    "フィニッシュで流す", "フィニッシュで壁に詰まる",
+    "最後の呼吸", "片手・両手タッチ", "相手との位置関係", "フレッシュ時はできるが疲労時に崩れる",
+  ],
+};
+
+export const competitiveObservedTags = [...new Set(Object.values(competitiveObservedTagsByPhase).flat())];
 
 export const learnObservedTags = [
   "水に入ることを嫌がる", "顔をつけたがらない", "顔をすぐ上げる", "水中で息を吐けない",
@@ -100,6 +136,42 @@ export const learnObservedTags = [
   "15mは泳げるが30mで止まる", "壁で完全に止まる", "泳法切替に時間がかかる",
   "疲れると動きが小さくなる", "説明が増えると動けなくなる", "順番待ちで集中が切れる",
 ];
+
+export const observedTagLabels: Record<string, string> = {
+  最終キック: "浮上前の最後のキック",
+  "合図後の初動が遅い": "合図から動き出すまでが遅い",
+  "入水時に形が崩れる": "入水した時に腕や体の形が崩れる",
+  "隣に選手がいるとリズムが変わる": "隣に選手がいると、自分の動きが変わる",
+  "壁前で小さな調整が増える": "壁の直前で小さいかきが増える",
+  "ターンで進入速度を失う": "壁へ近づく時にスピードが落ちる",
+  "壁を押す方向が毎回変わる": "ターン後、壁を蹴る方向が毎回変わる",
+  "ターン後に深くなりすぎる": "ターン後に深く潜りすぎる",
+  "疲れるとストロークが短くなる": "疲れると1かきで進む距離が短くなる",
+  "プッシュオフ後に減速する": "壁を蹴った後すぐに減速する",
+  "水中キックが途中で変わる": "水中キックの大きさやリズムが途中で変わる",
+  "フレッシュ時はできるが疲労時に崩れる": "疲れていない時はできるが、疲れると崩れる",
+  "一つの方法でしか成功しない": "決まったやり方でしかできない",
+  "一つの泳ぎ方に固定している": "決まった泳ぎ方しか試さない",
+  "ターン前後の速度の連続性": "壁の前後でスピードが大きく落ちる",
+  "最後の呼吸": "最後の息継ぎでスピードが落ちる",
+  "浮上時に一度止まる": "水中から水面へ出る時に一度止まる",
+  "第一ストロークへつながらない": "浮上後の1かき目につながらない",
+  "第一呼吸で速度が落ちる": "浮上後の最初の息継ぎでスピードが落ちる",
+  "レースペース時": "レースの速さにすると動きがつながらない",
+  "速度を上げるとストロークが短くなる": "速く泳ぐと1かきで進む距離が短くなる",
+  "疲れるとストローク数が急増する": "疲れるとかき数が急に増える",
+  "テンポを変えると崩れる": "腕を回すリズムを変えると崩れる",
+  "腕の協調": "左右の腕の動きがうまくつながらない",
+  "ペース変化": "泳ぐ速さを変えると動きが崩れる",
+  "条件が変わると崩れる": "周りの条件が変わるとできなくなる",
+  "フィニッシュで流す": "タッチ前にスピードを落として流してしまう",
+  "フィニッシュで壁に詰まる": "壁の手前で近づきすぎて止まる",
+  "片手・両手タッチ": "片手・両手タッチの使い分けができない",
+  "相手との位置関係": "隣の選手を見るとフィニッシュが崩れる",
+  "補助具に依存する": "補助具を外すとできない",
+  "泳法切替に時間がかかる": "泳ぎ方を切り替えるのに時間がかかる",
+  "説明が増えると動けなくなる": "説明が多いと動けなくなる",
+};
 
 export const equipmentOptions: SelectOption<EquipmentId>[] = [
   { value: "none", label: "なし" }, { value: "wall", label: "壁" },
@@ -144,34 +216,34 @@ export const implementationConditions = [
 ];
 
 export const variabilityOptions: SelectOption<VariabilityLevel>[] = [
-  { value: "constant", label: "一定", description: "同じ条件で安定化する" },
-  { value: "narrow", label: "狭い", description: "1要素を小幅に変える" },
-  { value: "medium", label: "中程度", description: "2〜3条件を比較する" },
-  { value: "wide", label: "広い", description: "複数条件を組み合わせる" },
+  { value: "constant", label: "変えない", description: "同じ条件を繰り返す" },
+  { value: "narrow", label: "1つだけ少し変える", description: "距離や速さなど1つを少し変える" },
+  { value: "medium", label: "2〜3通りを比べる", description: "いくつかの条件を順番に試す" },
+  { value: "wide", label: "いくつか組み合わせる", description: "速さや合図などを組み合わせる" },
 ];
 
 export const presentationOptions: SelectOption<PresentationOrder>[] = [
-  { value: "block", label: "ブロック" }, { value: "alternate", label: "A/B交互" },
-  { value: "series", label: "A/B/C系列" }, { value: "random", label: "ランダム" },
-  { value: "preAnnounced", label: "事前指定" }, { value: "lastSecond", label: "直前指定" },
-  { value: "during", label: "実行中指定" }, { value: "participantChoice", label: "本人選択" },
-  { value: "natural", label: "相手や環境に応じて自然に変化" },
+  { value: "block", label: "同じ条件を続ける" }, { value: "alternate", label: "2つを交互に試す" },
+  { value: "series", label: "3つを順番に試す" }, { value: "random", label: "順番を決めずに変える" },
+  { value: "preAnnounced", label: "始める前に伝える" }, { value: "lastSecond", label: "始める直前に伝える" },
+  { value: "during", label: "泳いでいる途中に伝える" }, { value: "participantChoice", label: "本人が選ぶ" },
+  { value: "natural", label: "相手や水の変化に合わせる" },
 ];
 
 export const cueOptions: SelectOption<CueStyle>[] = [
-  { value: "none", label: "声かけなし" }, { value: "outcome", label: "結果" },
-  { value: "externalNear", label: "外的・近位" }, { value: "externalFar", label: "外的・遠位" },
-  { value: "bodySensation", label: "身体感覚" }, { value: "analogy", label: "比喩" },
-  { value: "question", label: "問い" }, { value: "comparison", label: "比較" },
-  { value: "demonstration", label: "実演" },
+  { value: "none", label: "声をかけずに試してもらう" }, { value: "outcome", label: "目標だけ伝える" },
+  { value: "externalNear", label: "近くの目印を見てもらう" }, { value: "externalFar", label: "進む先や壁を見てもらう" },
+  { value: "bodySensation", label: "本人が感じたことを聞く" }, { value: "analogy", label: "たとえで伝える" },
+  { value: "question", label: "質問する" }, { value: "comparison", label: "2つの違いを比べてもらう" },
+  { value: "demonstration", label: "見本を見せる" },
 ];
 
 export const feedbackOptions: SelectOption<FeedbackStyle>[] = [
-  { value: "resultOnly", label: "結果だけ伝える" }, { value: "oneObservation", label: "観察事実を1つ伝える" },
-  { value: "selfEvaluationFirst", label: "本人の自己評価を先に聞く" }, { value: "questionOnly", label: "質問だけ行う" },
-  { value: "demonstration", label: "実演する" }, { value: "showGoodTrial", label: "良かった試行を示す" },
-  { value: "summary", label: "数回分をまとめて伝える" }, { value: "outOfRangeOnly", label: "設定範囲を外れたときだけ伝える" },
-  { value: "onRequest", label: "本人が求めたときに伝える" }, { value: "none", label: "フィードバックなしで再試行する" },
+  { value: "resultOnly", label: "できたかどうかだけ伝える" }, { value: "oneObservation", label: "実際に見えたことを1つ伝える" },
+  { value: "selfEvaluationFirst", label: "まず本人に感想を聞く" }, { value: "questionOnly", label: "答えを言わず、質問する" },
+  { value: "demonstration", label: "見本を見せる" }, { value: "showGoodTrial", label: "うまくできた1回を示す" },
+  { value: "summary", label: "数回試してからまとめて伝える" }, { value: "outOfRangeOnly", label: "目安から外れた時だけ伝える" },
+  { value: "onRequest", label: "本人が聞いた時だけ伝える" }, { value: "none", label: "何も伝えずもう1回試す" },
 ];
 
 export const phaseSpecificConditions: Record<CompetitivePhase, string[]> = {
@@ -190,22 +262,143 @@ export const playFormats = [
   "ペアで協力する", "グループで共通目標を達成する", "別の方法を見つける",
 ];
 
+/** Internal matching values stay stable while the interface uses everyday Japanese. */
+export const detailOptionLabels: Record<string, string> = {
+  "まだ成立しない": "まだ一度もできない",
+  "特定条件なら成立する": "決まった条件ならできる",
+  "成功と失敗が混在する": "できる時とできない時がある",
+  "安定している": "毎回だいたいできる",
+  "一つの方法に固定している": "同じやり方しか使わない",
+  "条件が変わると崩れる": "周りの条件が変わるとできない",
+  "速度を上げると崩れる": "速くするとできない",
+  "疲れると崩れる": "疲れるとできない",
+  "情報が増えると迷う": "説明や目印が多いと迷う",
+  "急ぐと崩れる": "急ぐとできない",
+  "経験段階": "これまでの練習経験",
+  "水への安心度": "水に対する安心感",
+  "身長・体格": "身長や体格",
+  リーチ: "腕の長さ",
+  可動性: "関節の動かしやすさ",
+  "筋力・パワー": "力の強さ",
+  "現在使える解決方法の数": "今できるやり方の数",
+  "理解できる情報量": "一度に理解できる説明の量",
+  "視覚・聴覚等のアクセシビリティ": "見え方・聞こえ方への配慮",
+  "補助の必要性": "補助が必要か",
+  実施時間: "練習する時間",
+  反復回数: "繰り返す回数",
+  "速度・強度": "泳ぐ速さ・きつさ",
+  目標ゾーン: "目標にする場所",
+  経路: "進むコース",
+  進行方向: "進む方向",
+  使用泳法: "使う泳ぎ方",
+  任意の泳ぎ方: "本人が選ぶ泳ぎ方",
+  "使用できる腕・脚": "使ってよい腕・脚",
+  呼吸側: "息継ぎする側",
+  動作順序: "動く順番",
+  休息時間: "休む時間",
+  使用用具: "使う用具",
+  停止可否: "途中で止まってよいか",
+  "選べる解決方法の数": "試せるやり方の数",
+  "選手・子どもが選べる項目": "本人に選んでもらうこと",
+  使用コース数: "使えるコース数",
+  水深: "水の深さ",
+  レーン幅: "コースの幅",
+  フラッグ: "背泳ぎ用の旗",
+  "他者との距離": "周りの人との距離",
+  視認性: "目印の見えやすさ",
+  "水面の穏やかさ": "水面の揺れ",
+  "波・乱流": "波や水の流れ",
+  "個人・ペア・集団": "1人・2人・グループ",
+  "協力・競争": "協力する／競争する",
+  実施可能時間: "使える練習時間",
+  参加人数: "練習する人数",
+  指導者数: "指導者の人数",
+  個人: "1人で行う",
+  ペア: "2人で行う",
+  小グループ: "少人数のグループ",
+  全体: "全員で行う",
+  "能力が近い集団": "泳力が近いグループ",
+  "能力差がある集団": "泳力に差があるグループ",
+  物語: "物語にして取り組む",
+  ミッション: "ゴールが分かる課題にする",
+  宝探し: "水中の目印や物を探す",
+  "島から島へ移動する": "決めた場所から別の場所へ移動する",
+  "A/Bを比べる": "2つのやり方を比べる",
+  "子どもがルールを選ぶ": "子どもがルールを決める",
+  "グループで共通目標を達成する": "グループ全員で同じ目標に挑戦する",
+  "別の方法を見つける": "できる別のやり方を探す",
+  "合図の予測可能性": "合図の間隔が予想できるか",
+  荷重位置: "構えた時の重心",
+  初動: "合図後の最初の動き",
+  入水深度: "入水の深さ",
+  第一キック: "入水後の最初のキック",
+  反応: "合図から動き出すまで",
+  空中局面: "飛び出してから入水まで",
+  "入水から水中動作への接続": "入水後に止まらず水中動作へ移れるか",
+  泳法: "泳ぎ方",
+  ターン形式: "ターンの種類",
+  進入速度: "壁へ近づく速さ",
+  壁接触: "壁に触れる位置",
+  接触時間: "壁に触れている時間",
+  押す方向: "壁を蹴る方向",
+  プッシュオフ: "壁を蹴った直後",
+  水中動作: "壁を蹴った後の水中動作",
+  "ターン前後の速度の連続性": "壁の前後で速さが落ちないか",
+  "腹・背・横": "体の向き（うつ伏せ・仰向け・横向き）",
+  軌道: "水中で通るコース",
+  キック頻度: "キックの速さ",
+  キック振幅: "キックの大きさ",
+  身体の向き: "体の向き",
+  左右差: "左右の動きの違い",
+  プッシュオフ速度: "壁を蹴った直後の速さ",
+  疲労: "疲れ",
+  抵抗具: "抵抗をかける用具",
+  最終キック: "浮上前の最後のキック",
+  第一ストローク: "浮上後の1かき目",
+  第一呼吸: "浮上後の最初の息継ぎ",
+  "水中から水上への速度の連続性": "浮上時に止まらず泳ぎ出せるか",
+  ストローク開始位置: "1かき目を始める場所",
+  キック継続: "浮上までキックを続けられるか",
+  泳法別の接続: "泳ぎ方ごとの泳ぎ出し",
+  速度: "泳ぐ速さ",
+  テンポ: "腕を回すリズム",
+  ストローク数: "かき数",
+  ストローク長: "1かきで進む距離",
+  "腕の協調": "左右の腕のつながり",
+  "腕脚の協調": "腕と脚のリズム",
+  呼吸頻度: "息継ぎの回数",
+  "加速・減速": "速くする・遅くする",
+  "隣の泳者": "隣の選手",
+  ペース変化: "泳ぐ速さの変化",
+  最後のストローク: "最後の1かき",
+  "ストロークの伸縮": "最後の1かきの長さ",
+  "速度を保ったタッチ": "速さを落とさずタッチする",
+  "壁までの距離判断": "壁まであと何かきか判断する",
+  "フィニッシュ前のテンポ": "タッチ前の腕のリズム",
+  "相手との位置関係": "隣の選手との位置",
+  "疲労時の判断": "疲れた時のタッチ判断",
+  フレッシュ時: "疲れていない時",
+  疲労時: "疲れている時",
+  レースペース時: "レースの速さで泳いでいる時",
+  壁情報: "壁の見え方・距離",
+};
+
 export const equipmentLabels = Object.fromEntries(equipmentOptions.map(({ value, label }) => [value, label])) as Record<EquipmentId, string>;
 export const equipmentFunctionLabels: Record<EquipmentId, string> = {
-  none: "身体と水から得る情報だけで試す",
-  wall: "支持面と到達地点を明確にする",
-  kickboard: "上体の支持と浮力を増やす",
-  noodle: "浮力と支持の位置を変える",
-  mat: "支持面の広さや安定性を変える",
-  hoop: "通る経路と目標ゾーンを示す",
-  marker: "距離・方向・切替地点を見える化する",
-  floatingObject: "水面上の目標や遊びの対象を作る",
-  sinkingObject: "水中の深さや到達目標を示す",
-  fins: "推進力と足先の水圧情報を増やす",
-  paddles: "手にかかる水圧と抵抗を増やす",
-  pullBuoy: "下肢の浮力を増やして条件を分ける",
-  snorkel: "呼吸場所を固定して姿勢情報を残す",
-  resistance: "進行方向と反対の抵抗を加える",
-  tempo: "動作のリズムを外部音で示す",
+  none: "用具を使わず、水や壁の感じ方を手がかりにする",
+  wall: "蹴る場所やゴールを分かりやすくする",
+  kickboard: "上半身を浮かせ、脚の動きに集中しやすくする",
+  noodle: "体を支える場所や浮き方を変える",
+  mat: "体を支える面の広さや揺れを変える",
+  hoop: "通る場所や方向を見て分かるようにする",
+  marker: "距離・方向・切り替え場所を見て分かるようにする",
+  floatingObject: "水面に目標を作る",
+  sinkingObject: "深さや水中のゴールを見て分かるようにする",
+  fins: "進みやすくし、足先にかかる水の感じを強くする",
+  paddles: "手にかかる水の感じを強くする",
+  pullBuoy: "脚を浮かせ、腕の動きに集中しやすくする",
+  snorkel: "息継ぎを減らし、姿勢に集中しやすくする",
+  resistance: "進む方向と反対に負荷をかける",
+  tempo: "音で動きのリズムを伝える",
 };
 export const goalLabels = Object.fromEntries(goals.map(({ value, label }) => [value, label])) as Record<GoalId, string>;

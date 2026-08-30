@@ -19,7 +19,7 @@ import { TaskCard } from "./components/TaskCard";
 import { evidenceSources } from "./data/evidenceSources";
 import {
   competitiveLevels,
-  competitiveObservedTags,
+  competitiveObservedTagsByPhase,
   competitivePhases,
   equipmentLabels,
   equipmentOptions,
@@ -29,10 +29,12 @@ import {
   learnLevels,
   learnObservedTags,
   modes,
+  observedTagLabels,
 } from "./data/options";
 import { adjustTask, matchTasks } from "./engine";
 import type {
   AdjustmentAction,
+  CompetitivePhase,
   EquipmentId,
   GoalId,
   MatchDetails,
@@ -69,21 +71,21 @@ const initialForm: FormState = {
 };
 
 const actionButtons: Array<{ action: AdjustmentAction; label: string; icon: typeof Gauge }> = [
-  { action: "easier", label: "易しくする", icon: Gauge },
-  { action: "harder", label: "難しくする", icon: Gauge },
+  { action: "easier", label: "距離・回数を減らす", icon: Gauge },
+  { action: "harder", label: "速さ・距離・合図のどれかを難しくする", icon: Gauge },
   { action: "noEquipment", label: "用具なしにする", icon: Wrench },
-  { action: "largeGroup", label: "人数が多い場合", icon: Users },
+  { action: "largeGroup", label: "大人数で行う", icon: Users },
   { action: "changeCue", label: "声かけを変える", icon: Waves },
-  { action: "moreExplore", label: "探索を増やす", icon: FlaskConical },
-  { action: "moreTransfer", label: "実場面へ近づける", icon: ChevronRight },
+  { action: "moreExplore", label: "2つのやり方を比べる", icon: FlaskConical },
+  { action: "moreTransfer", label: "壁・合図・周りの人を1つ加える", icon: ChevronRight },
 ];
 
 const relaxationLabels: Record<RelaxationStep, string> = {
-  cuePreference: "声かけ",
-  feedback: "フィードバック",
-  variabilityPreference: "変動量・提示順",
-  equipmentPreference: "任意用具の一致",
-  detailPreferences: "その他の詳細条件",
+  cuePreference: "声のかけ方",
+  feedback: "試した後の伝え方",
+  variabilityPreference: "条件の変え方・伝える順番",
+  equipmentPreference: "あれば使いたい用具",
+  detailPreferences: "追加で選んだこと",
 };
 
 function modeLabel(mode?: Mode) {
@@ -130,6 +132,14 @@ function App() {
     [matchInput, alternativeIndex],
   );
 
+  const observedOptions = useMemo(() => {
+    if (form.mode === "competitive") {
+      if (!form.phaseOrDomain) return [];
+      return competitiveObservedTagsByPhase[form.phaseOrDomain as CompetitivePhase] ?? [];
+    }
+    return learnObservedTags;
+  }, [form.mode, form.phaseOrDomain]);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [view]);
@@ -162,6 +172,15 @@ function App() {
     });
   };
 
+  const changePhaseOrDomain = (phaseOrDomain: string) => {
+    setForm((current) => ({
+      ...current,
+      phaseOrDomain: phaseOrDomain || undefined,
+      observedTag: undefined,
+      details: { ...current.details, specificConditions: [] },
+    }));
+  };
+
   const validateAndConfirm = () => {
     const nextErrors: string[] = [];
     let firstId = "";
@@ -170,10 +189,10 @@ function App() {
       nextErrors.push(message);
     };
     if (!form.goal) add("goal", "今日の狙いを選んでください。");
-    if (!form.phaseOrDomain) add("phase", "対象局面または技能領域を選んでください。");
-    if (!form.observedTag) add("observed", "現在起きていることを選んでください。");
-    if (!form.level) add("level-field", "対象レベルを選んでください。");
-    if (form.equipment.length === 0) add("equipment-field", "使用できる用具を選んでください。");
+    if (!form.phaseOrDomain) add("phase", form.mode === "competitive" ? "練習する場面を選んでください。" : "練習する内容を選んでください。");
+    if (!form.observedTag) add("observed", "今、どんな泳ぎになっているか選んでください。");
+    if (!form.level) add("level-field", "今の練習段階を選んでください。");
+    if (form.equipment.length === 0) add("equipment-field", "今日使える用具を選んでください。");
     setErrors(nextErrors);
     if (nextErrors.length > 0) {
       document.getElementById(firstId)?.focus();
@@ -208,7 +227,7 @@ function App() {
       <header className="app-header">
         <button type="button" className="brand-button" onClick={resetAll} aria-label="最初の画面へ戻る">
           <span className="brand-mark"><Waves aria-hidden="true" /></span>
-          <span><strong>Swim Constraints Lab</strong><small>観察から課題を選ぶ</small></span>
+          <span><strong>Swim Constraints Lab</strong><small>今の泳ぎから練習を選ぶ</small></span>
         </button>
         <button type="button" className="header-link" onClick={showReferences}>
           <BookOpen size={18} aria-hidden="true" /> 参考資料
@@ -217,12 +236,12 @@ function App() {
 
       {view === "mode" ? (
         <main className="page-shell mode-page" id="main-content">
-          <p className="section-kicker">Constraint-led practice ideas</p>
-          <h1>動きを決めつけず、<br />試す条件を設計する。</h1>
-          <p className="lead">観察された事実と今日の狙いから、成立・探索・実場面の3方向を静的データで提示します。</p>
+          <p className="section-kicker">練習選び</p>
+          <h1>いまの泳ぎを見て、<br />次の練習を選ぶ。</h1>
+          <p className="lead">選手・子どもの今の様子を選ぶと、今日すぐ試せる練習を3つ表示します。</p>
           <div className="principle-note">
             <FlaskConical aria-hidden="true" />
-            <p><strong>AIは使用しません。</strong>診断や唯一の正解ではなく、「この条件で何が起きるか」を観察するためのヒントです。</p>
+            <p><strong>AIは使用しません。</strong>アプリが診断するのではなく、指導者が泳ぎを見ながら練習を選ぶための参考案です。</p>
           </div>
           <h2 className="mode-heading">どちらの場面で使いますか？</h2>
           <div className="mode-grid">
@@ -235,7 +254,7 @@ function App() {
               </button>
             ))}
           </div>
-          <p className="draft-callout">収録課題はすべて監修前ドラフトです。専門コーチの判断を置き換えません。</p>
+          <p className="draft-callout">収録した練習はすべて監修前の下書きです。最後は現場の指導者が判断してください。</p>
         </main>
       ) : null}
 
@@ -249,9 +268,9 @@ function App() {
           <button type="button" className="text-button" onClick={() => setView("mode")}>
             <ArrowLeft size={18} aria-hidden="true" /> モードを選び直す
           </button>
-          <p className="section-kicker">Basic conditions</p>
-          <h1>今日の条件を選ぶ</h1>
-          <p className="lead">まず6項目だけ。細かな条件は必要なときに追加できます。</p>
+          <p className="section-kicker">基本の5項目</p>
+          <h1>今日の練習について教えてください</h1>
+          <p className="lead">まず5項目を選びます。必要な時だけ、追加の項目を選べます。</p>
 
           {errors.length > 0 ? (
             <div className="error-summary" role="alert" aria-live="assertive">
@@ -270,24 +289,33 @@ function App() {
             </label>
 
             <label className="select-field" htmlFor="phase">
-              <span><b>2</b> {form.mode === "competitive" ? "対象局面" : "技能領域"} <em>必須</em></span>
-              <select id="phase" value={form.phaseOrDomain ?? ""} onChange={(event) => setForm({ ...form, phaseOrDomain: event.target.value })}>
+              <span><b>2</b> {form.mode === "competitive" ? "どの場面を練習しますか？" : "何を練習しますか？"} <em>必須</em></span>
+              <select id="phase" value={form.phaseOrDomain ?? ""} onChange={(event) => changePhaseOrDomain(event.target.value)}>
                 <option value="">選んでください</option>
                 {(form.mode === "competitive" ? competitivePhases : learnDomains).map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
               </select>
             </label>
 
             <label className="select-field" htmlFor="observed">
-              <span><b>3</b> 現在起きていること <em>必須</em></span>
-              <select id="observed" value={form.observedTag ?? ""} onChange={(event) => setForm({ ...form, observedTag: event.target.value })}>
-                <option value="">観察した事実を選んでください</option>
-                {(form.mode === "competitive" ? competitiveObservedTags : learnObservedTags).map((label) => <option value={label} key={label}>{label}</option>)}
+              <span><b>3</b> 今、どんな泳ぎになっていますか？ <em>必須</em></span>
+              <select
+                id="observed"
+                value={form.observedTag ?? ""}
+                disabled={form.mode === "competitive" && !form.phaseOrDomain}
+                onChange={(event) => setForm({ ...form, observedTag: event.target.value })}
+              >
+                <option value="">
+                  {form.mode === "competitive" && !form.phaseOrDomain
+                    ? "先に練習する場面を選んでください"
+                    : "今見えていることを選んでください"}
+                </option>
+                {observedOptions.map((value) => <option value={value} key={value}>{observedTagLabels[value] ?? value}</option>)}
               </select>
             </label>
 
             <div id="level-field" tabIndex={-1}>
               <SingleChoiceChips
-                legend="4 対象レベル（必須）"
+                legend="4 今の練習段階（必須）"
                 options={form.mode === "competitive" ? competitiveLevels : learnLevels}
                 selected={form.level}
                 onChange={(value) => setForm({ ...form, level: value as TargetLevel })}
@@ -296,7 +324,7 @@ function App() {
 
             <div id="equipment-field" tabIndex={-1}>
               <MultiChoiceChips
-                legend="5 使用できる用具（必須・複数可）"
+                legend="5 今日使える用具（必須・複数可）"
                 options={equipmentOptions}
                 selected={form.equipment}
                 onToggle={toggleEquipment}
@@ -314,7 +342,7 @@ function App() {
           <div className="sticky-action-spacer" />
           <div className="sticky-action">
             <button type="button" className="primary-button" onClick={validateAndConfirm}>
-              条件を確認する <ChevronRight size={20} aria-hidden="true" />
+              入力内容を確認する <ChevronRight size={20} aria-hidden="true" />
             </button>
           </div>
         </main>
@@ -323,24 +351,24 @@ function App() {
       {view === "confirm" && matchInput ? (
         <main className="page-shell confirm-page" id="main-content">
           <button type="button" className="text-button" onClick={() => setView("form")}>
-            <ArrowLeft size={18} aria-hidden="true" /> 条件入力へ戻る
+            <ArrowLeft size={18} aria-hidden="true" /> 入力へ戻る
           </button>
-          <p className="section-kicker">Review</p>
-          <h1>選択条件の確認</h1>
-          <p className="lead">この条件から、異なる3方向のヒントを選びます。</p>
+          <p className="section-kicker">入力内容</p>
+          <h1>選んだ内容を確認</h1>
+          <p className="lead">この内容に合う練習を、3つの目的に分けて表示します。</p>
           <dl className="summary-card">
-            <div><dt>モード</dt><dd>{modeLabel(matchInput.mode)}</dd></div>
+            <div><dt>使う場面</dt><dd>{modeLabel(matchInput.mode)}</dd></div>
             <div><dt>今日の狙い</dt><dd>{goalLabels[matchInput.goal]}</dd></div>
-            <div><dt>局面・技能領域</dt><dd>{phaseLabel(matchInput.mode, matchInput.phaseOrDomain)}</dd></div>
-            <div><dt>観察事実</dt><dd>{matchInput.observedTag}</dd></div>
-            <div><dt>対象レベル</dt><dd>{levelLabel(matchInput.mode, matchInput.level)}</dd></div>
-            <div><dt>使用できる用具</dt><dd>{matchInput.equipment.map((item) => equipmentLabels[item]).join("・")}</dd></div>
-            <div><dt>追加した詳細条件</dt><dd>{Object.values(matchInput.details).filter((value) => Array.isArray(value) ? value.length > 0 : Boolean(value)).length}項目</dd></div>
+            <div><dt>練習する場面・内容</dt><dd>{phaseLabel(matchInput.mode, matchInput.phaseOrDomain)}</dd></div>
+            <div><dt>今見えていること</dt><dd>{observedTagLabels[matchInput.observedTag] ?? matchInput.observedTag}</dd></div>
+            <div><dt>今の練習段階</dt><dd>{levelLabel(matchInput.mode, matchInput.level)}</dd></div>
+            <div><dt>今日使える用具</dt><dd>{matchInput.equipment.map((item) => equipmentLabels[item]).join("・")}</dd></div>
+            <div><dt>追加で選んだこと</dt><dd>{Object.values(matchInput.details).filter((value) => Array.isArray(value) ? value.length > 0 : Boolean(value)).length}項目</dd></div>
           </dl>
           <div className="confirm-actions">
-            <button type="button" className="secondary-button" onClick={() => setView("form")}>条件を編集</button>
+            <button type="button" className="secondary-button" onClick={() => setView("form")}>入力を編集</button>
             <button type="button" className="primary-button" onClick={() => setView("results")}>
-              ヒントを表示 <ChevronRight size={20} aria-hidden="true" />
+              3つの練習を見る <ChevronRight size={20} aria-hidden="true" />
             </button>
           </div>
         </main>
@@ -353,13 +381,13 @@ function App() {
             <span>{phaseLabel(matchInput.mode, matchInput.phaseOrDomain)}</span>
             <span>{levelLabel(matchInput.mode, matchInput.level)}</span>
           </div>
-          <p className="section-kicker">Three directions</p>
-          <h1>今日試せる3つの方向</h1>
-          <p className="lead">同じ観察事実に対して、成立・探索・実場面を1枚ずつ選びました。</p>
+          <p className="section-kicker">3つの練習</p>
+          <h1>今日試す3つの練習</h1>
+          <p className="lead">「まずできるようにする」「やり方を比べる」「レースや普段の泳ぎで試す」の3つです。</p>
 
           {result.relaxationSteps.length > 0 ? (
             <div className="relaxation-note" role="status">
-              条件を一部緩めています：{result.relaxationSteps.map((step) => relaxationLabels[step]).join("、")}
+              合う練習が少なかったため、次の希望は外して選びました：{result.relaxationSteps.map((step) => relaxationLabels[step]).join("、")}
             </div>
           ) : null}
 
@@ -379,22 +407,22 @@ function App() {
             </div>
           ) : (
             <section className="empty-state">
-              <h2>一致する3方向が見つかりませんでした</h2>
-              <p>モードと局面・技能領域は固定したまま、使用できる用具を追加するか、詳細条件を一部外してください。</p>
-              <button type="button" className="primary-button" onClick={() => setView("form")}>条件入力へ戻る</button>
+              <h2>条件に合う3つの練習が見つかりませんでした</h2>
+              <p>今日使える用具を追加するか、「必要なら、もう少し細かく選ぶ」で選んだ項目を減らしてください。</p>
+              <button type="button" className="primary-button" onClick={() => setView("form")}>入力へ戻る</button>
             </section>
           )}
 
           <section className="adjustment-panel" aria-labelledby="adjustment-heading">
-            <p className="section-kicker">Adjust without AI</p>
-            <h2 id="adjustment-heading">条件を変えてもう一度見る</h2>
+            <p className="section-kicker">練習を調整</p>
+            <h2 id="adjustment-heading">人数や用具に合わせて練習を変える</h2>
             <div className="action-grid">
               <button
                 type="button"
                 className="action-button action-button--wide"
                 onClick={() => { setAlternativeIndex((current) => current + 1); setAdjustments([]); }}
               >
-                <RefreshCcw size={19} aria-hidden="true" /> 同じ条件で別案
+                <RefreshCcw size={19} aria-hidden="true" /> 今の入力で違う練習を見る
               </button>
               {actionButtons.map(({ action, label, icon: Icon }) => (
                 <button type="button" className="action-button" onClick={() => applyAdjustment(action)} key={action}>
@@ -406,14 +434,14 @@ function App() {
           </section>
 
           <div className="result-footer-actions">
-            <button type="button" className="secondary-button" onClick={() => setView("form")}><ArrowLeft size={18} aria-hidden="true" /> 条件入力へ戻る</button>
+            <button type="button" className="secondary-button" onClick={() => setView("form")}><ArrowLeft size={18} aria-hidden="true" /> 入力へ戻る</button>
             <button type="button" className="text-button" onClick={resetAll}><RotateCcw size={18} aria-hidden="true" /> 最初からやり直す</button>
           </div>
         </main>
       ) : null}
 
       <footer className="app-footer">
-        <p>監修前ドラフト · AI・外部API不使用 · 診断や唯一の正解を提示しません</p>
+        <p>監修前の案 · AI・外部API不使用 · 診断や唯一の正解を提示しません</p>
       </footer>
     </div>
   );

@@ -87,39 +87,248 @@ const equipmentFunctionsFor = (equipment: EquipmentId[]) => {
   return ids.length > 0 ? ids.map((item) => equipmentFunctionLabels[item]) : [equipmentFunctionLabels.none];
 };
 
+// 直接書き換えても文法が崩れない用語だけを、平易な表現にする。
+const coachText = (text: string): string => text
+  .replaceAll("ゲートの向こうへ滑る", "フープに触れず、入水後も進もう")
+  .replaceAll("疲労を主制約として速度を保つ", "50m泳いだ後も、スタートから15mまで止まらず進む")
+  .replaceAll("疲れていても最初の一手だけ明確に", "疲れていても、合図でしっかり動き出そう")
+  .replaceAll("泳法が変わっても壁接触から押し出しをつなげる", "クロール・背泳ぎのどちらでも、壁に触れて同じ方向へ蹴り出す")
+  .replaceAll("泳法とターン形式の切替を課題にする", "クロール・背泳ぎで、ターン後に同じ方向へ進む")
+  .replaceAll("壁の前後を一つの移動にする", "壁に触れたら向きを変え、止まらず蹴り出そう")
+  .replaceAll("泳法変更後も接触が乱れない", "泳ぎ方を変えても、止まらず壁に触れる")
+  .replaceAll("押し出し後の減速を小さくする", "壁を蹴った後もスピードを落とさない")
+  .replaceAll("個人メドレーの泳法切替に応用する", "個人メドレーで泳ぎ方を切り替える時にも使う")
+  .replaceAll("疲労と距離判断を同時に残す", "疲れた後も、壁まであと何かきか判断する")
+  .replaceAll("抵抗を増やさず最初の水中区間をつなぐ", "腕を伸ばした姿勢を崩さず8mまで進む")
+  .replaceAll("身体のまとまりと速度感を制約にする", "腕を伸ばした姿勢で8mまで進む")
+  .replaceAll("水を押さずに前へ通る", "腕を伸ばした姿勢を崩さず8m進もう")
+  .replaceAll("8mまで速度感が続く", "8mまで大きく減速しない")
+  .replaceAll("足先から作る波を選ぶ", "どのキックの大きさが進みやすい？")
+  .replaceAll("2条件を比較する", "フィンあり・なしを試す")
+  .replaceAll("選択理由を速度と感覚で述べる", "進みやすかった方と、その理由を言える")
+  .replaceAll("浅い軌道と深い軌道で浮上までの速度を比べる", "浅い・深いコースで、浮上までの進み方を比べる")
+  .replaceAll("水深と浮上位置を探索する", "浅い・深いコースと浮上位置を比べる")
+  .replaceAll("浅深2軌道を経験する", "浅い・深いコースを試す")
+  .replaceAll("波・乱流と隣泳者を主制約にする", "隣の選手が作る波の中で行う")
+  .replaceAll("軌道調整の選択肢を一つ以上使う", "深さかキック数を1つ変えられる")
+  .replaceAll("浮上地点と第一ストロークを固定する", "浮上する場所と1かき目を始める場所を決める")
+  .replaceAll("水面に出たら次の一手", "浮上したら、すぐに1かき目を入れよう")
+  .replaceAll("最終キックと腕の協調を整える", "最後のキック後、すぐに1かき目を入れる")
+  .replaceAll("第一呼吸のストローク位置を選ぶ", "2かき目・4かき目のどちらで息継ぎするか選ぶ")
+  .replaceAll("呼吸後の速度低下を本人が比較する", "息継ぎ後も進みやすい方を選べる")
+  .replaceAll("浮上角度と水中マーカーを比較する", "2つの浮上角度を比べる")
+  .replaceAll("2軌道で浮上できる", "2つの角度で浮上できる")
+  .replaceAll("第一ストロークの停止差を説明できる", "浮上後に止まりにくい方を説明できる")
+  .replaceAll("隣泳者と他者距離を制約にする", "隣の選手との距離を変える")
+  .replaceAll("隣の位置に過剰反応しない", "隣の選手を見ても、浮上位置を変えすぎない")
+  .replaceAll("音の間に水を後ろへ送る", "音に合わせて腕を回そう")
+  .replaceAll("本人が速度感を報告できる", "本人が進む速さの違いを言える")
+  .replaceAll("数ではなく壁までの前進を見る", "かき数を変えた時の速さを比べよう")
+  .replaceAll("用具と腕脚の使用条件を比較する", "用具あり・なしで腕と脚の動きを比べる")
+  .replaceAll("速度・強度とペース順序を制約にする", "25mごとに泳ぐ速さを変える")
+  .replaceAll("速さが変わっても水をつなぐ", "速さが変わっても、腕と脚の動きを止めない")
+  .replaceAll("隣泳者と波を環境制約にする", "隣の選手が作る波の中で泳ぐ")
+  .replaceAll("環境変化後も50mを完了する", "波の強さが変わっても50m泳ぎ切る")
+  .replaceAll("調整した要素と結果を説明できる", "変えたことと、泳ぎやすさを説明できる")
+  .replaceAll("終了地点と停止可否を固定する", "壁まで止まらず泳ぐ")
+  .replaceAll("壁を通り過ぎるつもりで触る", "壁の手前で流さず、そのままタッチしよう")
+  .replaceAll("壁前でグライドしない", "壁の前で流さない")
+  .replaceAll("壁情報と終了地点を手がかりにする", "壁から3mの目印を使い、両手でタッチする")
+  .replaceAll("壁の面を両手で迎える", "両手を同時に壁へ伸ばそう")
+  .replaceAll("2条件のタッチを経験する", "息継ぎあり・なしでタッチする")
+  .replaceAll("壁に届く最短の道を探す", "どちらのタッチが止まりにくい？")
+  .replaceAll("相手ではなく壁の面へ速度を運ぶ", "隣の選手を見ず、壁まで速さを落とさず泳ごう")
+  .replaceAll("フィンありで小さな振幅、なしで自分の振幅を試す", "フィンありでは小さく、フィンなしでは本人が選んだ大きさでキックする")
+  .replaceAll("最終キックから腕へ連続する", "最後のキック後、間を空けずに1かき目を入れられる")
+  .replaceAll("レースペースのブレイクアウトへ接続する", "レースの速さでも、水中から浮上後すぐに泳ぎ始める")
+  .replaceAll("第一ストロークへ連続する", "浮上後、間を空けず1かき目を入れる")
+  .replaceAll("混戦時のブレイクアウト判断に転移する", "隣の選手が近いレースでも、自分の浮上位置を選ぶ")
+  .replaceAll("レース用具を使わない泳動作の選択へ転移する", "用具を外した後も、腕と脚がつながる泳ぎ方を選ぶ")
+  .replaceAll("実戦の隣接選手・波への適応に転移する", "隣の選手や波があるレースでも、息継ぎする側や腕のリズムを選ぶ")
+  .replaceAll("レーンごとにA/B条件を分ける", "息継ぎあり・なしをレーンごとに分ける")
+  .replaceAll("レース終盤の呼吸判断へ転移する", "レース終盤でも、最後に息継ぎする位置を選ぶ")
+  .replaceAll("競技終盤のフィニッシュ判断に転移する", "レース終盤でも、最後の息継ぎとタッチ方法を選ぶ")
+  .replaceAll("実際のレースの隣接情報を残した判断へつなげる", "実際のレースでも、隣の選手ではなく自分の合図で動く")
+  .replaceAll("レース用フィンの感覚を通常の水中動作へ転移する", "フィンを外した後も、選んだキックの大きさで水中を進む")
+  .replaceAll("混雑したレースの水中区間へ転移する", "隣の選手や波があるレースでも、水中の深さかキック数を選ぶ")
+  .replaceAll("相手や距離が変わるターン後の浮上選択に接続する", "相手や壁までの距離が変わっても、浮上する場所を選ぶ")
+  .replaceAll("スタート後の泳動作開始に転用する", "スタート後、浮上してすぐに泳ぎ始める")
+  .replaceAll("壁からのけのびと一かきで接続する", "壁を蹴って浮上し、間を空けず1かき目を入れる")
+  .replaceAll("実戦のスタート後15mに接続する", "実際のレースでも、スタート後15mまで止まらず泳ぐ")
+  .replaceAll("レース中の速度変化への調整に接続する", "レース中に速さが変わっても、かき数を調整する")
+  .replaceAll("レース中盤のペース変化へ接続する", "レース中盤で速さを変える時にも使う")
+  .replaceAll("平泳ぎ・バタフライのタッチへ接続する", "平泳ぎ・バタフライで両手タッチする")
+  .replaceAll("壁歩きから背面姿勢への接続で行う", "壁まで歩き、壁に触れてから背泳ぎ姿勢へ変える")
+  .replaceAll("テンポを5%上げて同じ接続を試す", "テンポを5%上げても、最後のキック後すぐ1かき目を入れる")
+  .replaceAll("25m後にどの情報を使ったか答える", "25m後に、音・水面・自分の感覚のどれを使ったか答える")
+  .replaceAll("壁に触れた後、使った情報を答える", "壁に触れた後、使った目印を答える")
+  .replaceAll("壁へ向かう情報を一つ選ぶ", "壁までの距離か最後の息継ぎから、使う目印を1つ選ぶ")
+  .replaceAll("実戦のスタート後に周囲情報を取り込む呼吸へつなげる", "実際のレースでも、周りを見て息継ぎする場所を選ぶ")
+  .replaceAll("相手や壁の情報に応じた呼吸選択へつなげる", "隣の選手や壁の位置に合わせて、息継ぎする側を選ぶ")
+  .replaceAll("短くなった一手も壁への情報にする", "疲れて1かきが短くなっても、壁までの距離を見よう")
+  .replaceAll("速さの中でも次の情報を見る", "速くても、浮上後の息継ぎ位置を見よう")
+  .replaceAll("速度感と水面の情報から方法を選ぶ", "進む速さと水面の様子を見て、息継ぎする場所を選ぶ")
+  .replaceAll("隣泳者との位置関係を情報にして速度を保つ", "隣の選手がいても、自分の速さを保つ")
+  .replaceAll("隣泳者の位置を情報にして浮上と泳動作を調整する", "隣の選手がいても、自分の浮上位置と泳ぎ出すタイミングを選ぶ")
+  .replaceAll("5mラインへ静かな入水", "スタートから5mまで止まらず進む")
+  .replaceAll("合図から5mまでの初動と入水を一つの流れにする", "合図から5mまでの動きを止めずにつなげる")
+  .replaceAll("5mの先へ体を運ぶ", "合図で動き、5mラインまで進もう")
+  .replaceAll("距離と開始姿勢を絞る", "5mまで・腰掛け姿勢から始める")
+  .replaceAll("入水角度のゲート通過", "フープに触れずに入水する")
+  .replaceAll("低いゲートを通る結果から入水角度を調整する", "フープに触れないよう、入水の角度を調整する")
+  .replaceAll("重心を変えるスタート比較", "構える位置を変えてスタートを比べる")
+  .replaceAll("荷重位置の違いが初速にどう表れるか本人が探す", "構える位置を前・中央に変え、10mまでの進み方を比べる")
+  .replaceAll("浅い入水と深い入水の10m対比", "浅い入水と深い入水を10mまで比べる")
+  .replaceAll("入水深度を変えて浮上までのつながりを探索する", "浅め・深めの入水を試し、10mまで進みやすい方を選ぶ")
+  .replaceAll("深度と浮上地点を比較する", "浅い・深い入水で、浮上する場所を比べる")
+  .replaceAll("10mまでの減速感を比較できる", "10mまでスピードが落ちにくい方を選べる")
+  .replaceAll("レースペースの入水軌道選択へ結びつける", "レースの速さでも、浅め・深めの入水を自分で選ぶ")
+  .replaceAll("隣泳者ありの初動レース", "隣に選手がいる状態で15mスタート")
+  .replaceAll("隣の動きと合図を情報にしてスタート後15mを泳ぐ", "隣に選手がいても、自分の合図でスタートして15m泳ぐ")
+  .replaceAll("隣泳者と合図の不確実性を残す", "隣に選手がいる状態で、合図の間隔を変える")
+  .replaceAll("15mまで入水の流れが続く", "入水後も止まらず15mまで進む")
+  .replaceAll("疲労後のスタート再現", "50m泳いだ後にスタートする")
+  .replaceAll("隣の選手情報を加える", "隣の選手の動きも加える")
+  .replaceAll("疲労した状態で合図から15mを進む", "疲れた状態で合図から15mを進む")
+  .replaceAll("レース終盤の再スタート練習ではなく、疲労下の局面接続に転用する", "疲れた状態でも、スタートから15mまでの動きをつなげる")
+  .replaceAll("壁前3ストロークの道しるべ", "壁前3ストロークでターン")
+  .replaceAll("回転後の壁押し方向", "ターン後、底のラインへ向かって壁を蹴る")
+  .replaceAll("ターン後のコース復帰情報へつなぐ", "ターン後に底のラインへ戻る判断につなげる")
+  .replaceAll("最後の呼吸を選ぶターン", "ターン前に息継ぎする・しないを比べる")
+  .replaceAll("回転の半径を変えるターン", "小さく回る・大きく回るターン")
+  .replaceAll("小さな回転と大きな回転の違いを本人が発見する", "小さく回る方法と大きく回る方法を比べる")
+  .replaceAll("回転半径と浮上位置を比較する", "小さく回る・大きく回る方法と浮上位置を比べる")
+  .replaceAll("回転を小さくした試行と、余裕を持つ試行を交互に行う", "小さく回る方法と、大きく回る方法を交互に行う")
+  .replaceAll("異なる半径を試せる", "小さく回る方法と大きく回る方法を試せる")
+  .replaceAll("次の水面を先に選ぶ", "どちらの回り方が、目標の位置で浮上しやすい？")
+  .replaceAll("異なる泳法からのターン接続", "クロール・背泳ぎから同じ方向へ壁を蹴る")
+  .replaceAll("疲労下の壁接触タイミング", "75m泳いだ後にターンする")
+  .replaceAll("5キックのライン滑走", "壁を蹴り、同じ深さで5回キックする")
+  .replaceAll("プッシュオフ速度を残す姿勢", "壁を蹴った姿勢で8m進む")
+  .replaceAll("フィンの有無と振幅を比べ、前へ進む感覚を探す", "フィンあり・なしでキックの大きさを変え、進み方を比べる")
+  .replaceAll("フィン条件と振幅を比較する", "フィンあり・なしとキックの大きさを変える")
+  .replaceAll("フィンなしで速度と振幅を同時に変える", "フィンなしで速さとキックの大きさを同時に変える")
+  .replaceAll("深さを変える水中軌道", "浅い・深い水中コースを比べる")
+  .replaceAll("隣泳者の波がある条件で水中軌道を適応させる", "隣の選手が作る波の中で、深さかキック数を選ぶ")
+  .replaceAll("第一ストロークを置く地点", "浮上後すぐに1かき目を入れる")
+  .replaceAll("浮上地点から第一ストロークまでの停止をなくす", "浮上したら止まらず、すぐに1かき目を入れる")
+  .replaceAll("最終キックから腕脚協調へ", "最後のキックから1かき目へ")
+  .replaceAll("水中最終キックを第一ストロークのリズムに合わせる", "水中の最後のキックから、間を空けず1かき目を入れる")
+  .replaceAll("最後のキックが次の腕を呼ぶ", "最後のキックの後、すぐに腕を動かそう")
+  .replaceAll("水面へ抜ける道を選ぶ", "どちらの角度が、止まらず泳ぎ出しやすい？")
+  .replaceAll("第一呼吸の場所を探す", "浮上後、2かき目・4かき目の息継ぎを比べる")
+  .replaceAll("浮上後の呼吸位置を変え、速度を保ちやすい場所を探索する", "浮上後の2かき目・4かき目で息継ぎし、進みやすい方を選ぶ")
+  .replaceAll("浮上角度とキック継続の比較", "2つの角度で浮上し、止まりにくい方を選ぶ")
+  .replaceAll("レースペースのブレイクアウト", "レースの速さで水中から泳ぎ出す")
+  .replaceAll("レースペース後に泳動作へ移る", "レースの速さでも、浮上後すぐに泳ぎ始める")
+  .replaceAll("疲労セット", "疲れるセット")
+  .replaceAll("隣泳者の水面へ抜ける", "隣に選手がいる状態で浮上する")
+  .replaceAll("自分のレーンの水面を読む", "自分の浮上位置とタイミングに集中しよう")
+  .replaceAll("速度を保ちながらストローク数の許容幅を経験する", "ストローク数を1回ずつ変え、速さの違いを比べる")
+  .replaceAll("ストローク数と速度の関係を個別化する", "本人に合うストローク数を探す")
+  .replaceAll("疲労後も許容幅を維持する", "疲れた後もストローク数を1回ずつ変えて比べる")
+  .replaceAll("用具が変える腕脚の協調", "用具あり・なしで腕と脚の動きを比べる")
+  .replaceAll("パドルとプルブイの条件で協調の違いを発見する", "パドル・プルブイ・用具なしで腕と脚の動きを比べる")
+  .replaceAll("ペース変化を含む100m", "泳ぐ速さを25mごとに変える100m")
+  .replaceAll("速度の切替後も泳法の協調を保つ", "泳ぐ速さを変えても腕と脚の動きをつなげる")
+  .replaceAll("最後の呼吸をしない距離の探索", "最後に息継ぎする位置を比べる")
+  .replaceAll("最後の情報を壁に残す", "最後は壁を見て、そのままタッチしよう")
+  .replaceAll("疲労した最後の5m", "疲れた後の最後の5m")
+  .replaceAll("最後の5mにも前進の情報がある", "疲れていても、壁まで泳ぎ切ろう")
+  .replaceAll("両手タッチの壁情報", "壁に詰まらず両手でタッチする")
+  .replaceAll("波と隣泳者の25m選択", "波の強さに合わせて呼吸側を選ぶ50m")
+  .replaceAll("相手位置を使うフィニッシュ", "隣の選手がいても壁まで泳ぎ切る")
+  .replaceAll("相互観察する", "互いに確認する")
+  .replaceAll("フィンありだけで安定化する", "フィンありだけを繰り返す")
+  .replaceAll("本数を固定して安定化する", "ストローク数を決めて繰り返す")
+  .replaceAll("スタート・ターン後の水中姿勢へ統合する", "スタート・ターン後の水中姿勢につなげる")
+  .replaceAll("壁情報", "壁の見え方・距離")
+  .replaceAll("相手情報", "隣の選手の位置")
+  .replaceAll("周囲情報", "周りの様子")
+  .replaceAll("隣接情報", "隣の選手の動き")
+  .replaceAll("第一ストローク", "浮上後の1かき目")
+  .replaceAll("第一呼吸", "浮上後の最初の息継ぎ")
+  .replaceAll("最終キック", "浮上前の最後のキック")
+  .replaceAll("キック振幅", "キックの大きさ")
+  .replaceAll("振幅", "キックの大きさ")
+  .replaceAll("腕脚の協調", "腕と脚のリズム")
+  .replaceAll("腕脚協調", "腕と脚のリズム")
+  .replaceAll("腕の協調", "左右の腕のつながり")
+  .replaceAll("泳動作", "泳ぎ")
+  .replaceAll("水中動作", "水中の動き")
+  .replaceAll("入水深度", "入水の深さ")
+  .replaceAll("荷重位置", "構えた時の重心")
+  .replaceAll("初速", "最初の速さ")
+  .replaceAll("進入速度", "壁へ近づく速さ")
+  .replaceAll("深度", "深さ")
+  .replaceAll("観察区間", "確認する区間")
+  .replaceAll("観察する", "見る")
+  .replaceAll("隣泳者", "隣の選手")
+  .replaceAll("初動", "動き出し")
+  .replaceAll("プッシュオフ後", "壁を蹴った後")
+  .replaceAll("プッシュオフ", "壁を蹴る動き")
+  .replaceAll("制約", "条件")
+  .replaceAll("探索する", "比べて試す")
+  .replaceAll("探索", "比較")
+  .replaceAll("フレッシュ時", "疲れていない時")
+  .replaceAll("疲労状態", "疲れている状態")
+  .replaceAll("疲労下", "疲れている時")
+  .replaceAll("疲労時", "疲れている時")
+  .replaceAll("疲労後", "疲れた後")
+  .replaceAll("疲労度", "疲れ具合")
+  .replaceAll("疲労", "疲れ")
+  .replaceAll("試行間", "1回ごとに")
+  .replaceAll("試行", "1回")
+  .replaceAll("A/B", "2つの方法")
+  .replaceAll("適応させる", "合わせる")
+  .replaceAll("適応する", "対応する")
+  .replaceAll("適応", "対応")
+  .replaceAll("成立", "できる")
+  .replaceAll("実場面", "実際の場面")
+  .replaceAll("レースペース", "レースの速さ");
+
+const suggestedDoseByPhase: Record<CompetitivePhase, string> = {
+  start: "5〜15mを4回。1回ごとに30秒休む。",
+  turn: "壁の前後5〜10mを4回。1回ごとに30秒休む。",
+  underwater: "水中5〜15mを4回。1回ごとに30秒休む。",
+  breakout: "浮上から25mまでを4回。1回ごとに30秒休む。",
+  swimming: "25mを4本。1本ごとに30秒休む。",
+  finish: "壁前5〜10mを4回。1回ごとに30秒休む。",
+};
+
 const makeTask = (s: TaskSpec): TaskTemplate => {
   const baseline = noEquipmentBaselines[s.id];
   const requiredEquipment = baseline ? [] : s.requiredEquipment.filter((equipment) => equipment !== "none");
   const optionalEquipment = baseline ? [] : s.optionalEquipment.filter((equipment) => equipment !== "none");
 
   return {
-    id: s.id, mode: "competitive", direction: s.direction, title: s.title,
-    summary: s.summary, phases: [s.phase], domains: [s.phase], goals: [s.goal],
+    id: s.id, mode: "competitive", direction: s.direction, title: coachText(s.title),
+    summary: coachText(s.summary), phases: [s.phase], domains: [s.phase], goals: [s.goal],
     observedTags: [s.observedTag], levels: [s.level], primaryConstraint: s.primaryConstraint,
-    primaryConstraintLabel: s.primaryConstraintLabel, fixedConditions: s.fixedConditions,
+    primaryConstraintLabel: coachText(s.primaryConstraintLabel), fixedConditions: s.fixedConditions.map(coachText),
     requiredEquipment, optionalEquipment,
     equipmentFunctions: equipmentFunctionsFor([...requiredEquipment, ...optionalEquipment]),
-    environmentTags: s.environmentTags, setup: baseline?.setup ?? s.setup,
-    instructions: baseline?.instructions ?? s.instructions,
-    participantCue: s.participantCue, informationToUse: s.informationToUse,
-    permittedSolutions: s.permittedSolutions, participantChoices: s.participantChoices,
-    successCriteria: s.successCriteria, coachObservation: s.coachObservation,
-    suggestedDose: s.suggestedDose, variabilityLevel: s.variabilityLevel,
+    environmentTags: s.environmentTags, setup: coachText(baseline?.setup ?? s.setup),
+    instructions: (baseline?.instructions ?? s.instructions).map(coachText),
+    participantCue: coachText(s.participantCue), informationToUse: s.informationToUse.map(coachText),
+    permittedSolutions: s.permittedSolutions.map(coachText), participantChoices: s.participantChoices.map(coachText),
+    successCriteria: s.successCriteria.map(coachText), coachObservation: coachText(s.coachObservation),
+    suggestedDose: suggestedDoseByPhase[s.phase], variabilityLevel: s.variabilityLevel,
     presentationOrder: s.presentationOrder, cueStyle: s.cueStyle, feedbackStyle: s.feedbackStyle,
-    easier: s.easier, harder: s.harder, noEquipment: s.noEquipment,
-    largeGroup: s.largeGroup, transferConnection: s.transferConnection,
-    evidenceIds: s.evidenceIds, evidenceNote: "監修前ドラフト。根拠は課題設計の視点を支えるもので、個別課題の効果を保証しません。",
+    easier: coachText(s.easier), harder: coachText(s.harder), noEquipment: coachText(s.noEquipment),
+    largeGroup: coachText(s.largeGroup), transferConnection: coachText(s.transferConnection),
+    evidenceIds: s.evidenceIds, evidenceNote: "監修前の案です。参考資料は練習の考え方を支えるもので、この練習の効果を保証するものではありません。",
     reviewStatus: "draft",
   };
 };
 
 const common = (id: string, phase: CompetitivePhase, direction: CardDirection, title: string, summary: string, observedTag: string, goal: GoalId, level: TargetLevel, primaryConstraint: ConstraintCategory, primaryConstraintLabel: string, setup: string, instructions: string[], participantCue: string, successCriteria: string[], coachObservation: string, easier: string, harder: string, noEquipment: string, largeGroup: string, transferConnection: string, requiredEquipment: EquipmentId[] = ["none"], optionalEquipment: EquipmentId[] = ["marker"], variabilityLevel: VariabilityLevel = "narrow", presentationOrder: PresentationOrder = "block", cueStyle: CueStyle = "outcome", feedbackStyle: FeedbackStyle = "oneObservation"): TaskSpec => ({
   id, phase, direction, title, summary, observedTag, goal, level, primaryConstraint, primaryConstraintLabel,
-  requiredEquipment, optionalEquipment, fixedConditions: ["無理に形をそろえず、指定された結果を観察する"],
+  requiredEquipment, optionalEquipment, fixedConditions: ["上手な形を教え込まず、ねらった動きができたかを見る"],
   environmentTags: ["プール長", "水上・水中マーカー", "個人・ペア・集団"], setup, instructions,
   participantCue, informationToUse: ["壁・マーカーとの距離", "自分が選んだ方法と結果"],
   permittedSolutions: ["テンポや深さを自分で調整する", "複数の動作方法を試す"],
-  participantChoices: ["試す順番", "動作の強さ"], successCriteria, coachObservation, suggestedDose: "25mを4本、試行間は30秒休む",
+  participantChoices: ["試す順番", "動作の強さ"], successCriteria, coachObservation, suggestedDose: "局面ごとの距離を4回",
   variabilityLevel, presentationOrder, cueStyle, feedbackStyle, easier, harder, noEquipment, largeGroup, transferConnection,
   evidenceIds: ["seifert-2014", "sheaff-book"],
 });

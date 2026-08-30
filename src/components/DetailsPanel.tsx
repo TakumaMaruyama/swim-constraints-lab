@@ -1,6 +1,7 @@
 import {
   cueOptions,
   currentStates,
+  detailOptionLabels,
   environmentConstraints,
   feedbackOptions,
   implementationConditions,
@@ -37,6 +38,11 @@ type ArrayKey =
   | "implementationConditions"
   | "specificConditions";
 
+const asOptions = (values: string[]) => values.map((value) => ({
+  value,
+  label: detailOptionLabels[value] ?? value,
+}));
+
 export function DetailsPanel({ mode, phaseOrDomain, value, onChange }: DetailsPanelProps) {
   const toggle = (key: ArrayKey, item: string) => {
     const values = value[key];
@@ -53,72 +59,72 @@ export function DetailsPanel({ mode, phaseOrDomain, value, onChange }: DetailsPa
   return (
     <details className="details-panel">
       <summary>
-        <span>詳細条件を設定する</span>
-        <small>任意・あとから変更できます</small>
+        <span>必要なら、もう少し細かく選ぶ</span>
+        <small>選ばなくても進めます</small>
       </summary>
       <div className="details-panel__body">
         <MultiChoiceChips
-          legend="現在の状態"
-          options={currentStates.map((label) => ({ value: label, label }))}
+          legend="どのくらいできているか"
+          options={asOptions(currentStates)}
           selected={value.currentStates}
           onToggle={(item) => toggle("currentStates", item)}
           compact
         />
         <MultiChoiceChips
-          legend="Individual constraints"
-          options={individualConstraints.map((label) => ({ value: label, label }))}
+          legend="選手・子どもの状態"
+          options={asOptions(individualConstraints)}
           selected={value.individualConstraints}
           onToggle={(item) => toggle("individualConstraints", item)}
           compact
         />
         <MultiChoiceChips
-          legend="Task constraints"
-          options={taskConstraints.map((label) => ({ value: label, label }))}
+          legend="練習のやり方"
+          options={asOptions(taskConstraints)}
           selected={value.taskConstraints}
           onToggle={(item) => toggle("taskConstraints", item)}
           compact
         />
         <MultiChoiceChips
-          legend="Environment constraints"
-          options={environmentConstraints.map((label) => ({ value: label, label }))}
+          legend="プールや周りの状況"
+          options={asOptions(environmentConstraints)}
           selected={value.environmentConstraints}
           onToggle={(item) => toggle("environmentConstraints", item)}
           compact
         />
         <MultiChoiceChips
-          legend="実施条件"
-          options={implementationConditions.map((label) => ({ value: label, label }))}
+          legend="人数・時間"
+          options={asOptions(implementationConditions)}
           selected={value.implementationConditions}
           onToggle={(item) => toggle("implementationConditions", item)}
           compact
         />
         <MultiChoiceChips
-          legend={mode === "competitive" ? "局面の詳細" : "遊び・課題形式"}
-          options={specificOptions.map((label) => ({ value: label, label }))}
+          legend={mode === "competitive" ? "この場面のどこを詳しく見ますか？" : "どんな遊び方で行いますか？"}
+          options={asOptions(specificOptions)}
           selected={value.specificConditions}
           onToggle={(item) => toggle("specificConditions", item)}
           compact
         />
         <SingleChoiceChips
-          legend="変動量"
+          legend="同じ練習で何通り試しますか？"
           options={variabilityOptions}
           selected={value.variabilityLevel}
           onChange={(item) => onChange({ ...value, variabilityLevel: item as VariabilityLevel })}
         />
         <SingleChoiceChips
-          legend="条件の提示順"
+          legend="やり方をいつ伝えますか？"
           options={presentationOptions}
           selected={value.presentationOrder}
           onChange={(item) => onChange({ ...value, presentationOrder: item as PresentationOrder })}
         />
         <SingleChoiceChips
-          legend="声かけ形式"
+          legend="どんな声をかけるか"
           options={cueOptions}
           selected={value.cueStyle}
           onChange={(item) => onChange({ ...value, cueStyle: item as CueStyle })}
         />
         <SingleChoiceChips
-          legend="フィードバック形式"
+          legend="試した後にどう伝えるか"
           options={feedbackOptions}
           selected={value.feedbackStyle}
           onChange={(item) => onChange({ ...value, feedbackStyle: item as FeedbackStyle })}

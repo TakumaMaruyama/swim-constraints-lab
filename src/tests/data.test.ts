@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { evidenceSources } from "../data/evidenceSources";
 import { constraintModifiers } from "../data/constraintModifiers";
-import { learnDomains as learnDomainOptions } from "../data/options";
+import { competitiveObservedTagsByPhase, learnDomains as learnDomainOptions } from "../data/options";
 import { taskTemplates } from "../data/taskTemplates";
 import { matchTasks } from "../engine";
 import type { CardDirection, CompetitivePhase, LearnToSwimLevel, Mode, TaskTemplate } from "../types";
@@ -35,6 +35,19 @@ describe("task template catalog", () => {
     }
   });
 
+  it("offers only observed facts that exist in templates for each competitive phase", () => {
+    const competitive = tasksForMode("competitive");
+
+    for (const phase of competitivePhases) {
+      const observedTags = new Set(
+        competitive.filter((task) => task.phases.includes(phase)).flatMap((task) => task.observedTags),
+      );
+      for (const option of competitiveObservedTagsByPhase[phase]) {
+        expect(observedTags, `${phase} has no template for observed fact: ${option}`).toContain(option);
+      }
+    }
+  });
+
   it("keeps the learn-to-swim catalog balanced across three levels and three directions", () => {
     const learnToSwim = tasksForMode("learnToSwim");
 
@@ -52,7 +65,7 @@ describe("task template catalog", () => {
 
     for (const task of taskTemplates) {
       expect(task.reviewStatus).toBe("draft");
-      expect(task.evidenceNote).toContain("監修前ドラフト");
+      expect(task.evidenceNote).toContain("監修前の案");
       expect(task.evidenceIds.length).toBeGreaterThan(0);
       expect(task.evidenceIds.every((id) => evidenceIds.has(id))).toBe(true);
     }
@@ -84,6 +97,30 @@ describe("task template catalog", () => {
       expect(task.coachObservation).not.toMatch(/[\r\n]/);
       expect((task.participantCue.match(/[。！？!?]/g) ?? []).length).toBeLessThanOrEqual(1);
       expect((task.coachObservation.match(/[。！？!?]/g) ?? []).length).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("keeps coach-facing task copy free of known broken or AI-like wording", () => {
+    const forbiddenTerms = [
+      "監修前ドラフト", "舟", "星", "三つの駅", "三色の島", "ミッション", "疲れした",
+      "選手手がかり", "相互見る", "転移", "試行", "変更情報", "許容幅", "振幅", "協調",
+      "転用", "接続", "小さなキックの大きさ", "2つの方法条件", "でも試す", "レースの速さ後",
+    ];
+    const displayFields = [
+      "title", "summary", "primaryConstraintLabel", "fixedConditions", "setup", "instructions",
+      "participantCue", "informationToUse", "permittedSolutions", "participantChoices", "successCriteria",
+      "coachObservation", "suggestedDose", "easier", "harder", "noEquipment", "largeGroup",
+      "transferConnection", "evidenceNote",
+    ] as const;
+
+    for (const task of taskTemplates) {
+      const displayCopy = displayFields
+        .map((field) => task[field])
+        .flat()
+        .join("\n");
+      for (const forbiddenTerm of forbiddenTerms) {
+        expect(displayCopy, `${task.id} contains forbidden wording: ${forbiddenTerm}`).not.toContain(forbiddenTerm);
+      }
     }
   });
 
