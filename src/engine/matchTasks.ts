@@ -127,11 +127,6 @@ const scoreTemplate = (template: TaskTemplate, input: MatchInput): ScoredTemplat
     score += 20;
     matched.push("観察事実");
   }
-  if (template.levels.includes(input.level)) {
-    score += 10;
-    matched.push("対象レベル");
-  }
-
   const environmentTerms = [
     ...details.environmentConstraints,
     ...details.implementationConditions,
@@ -163,6 +158,7 @@ const scoreTemplate = (template: TaskTemplate, input: MatchInput): ScoredTemplat
 const isHardMatch = (template: TaskTemplate, input: MatchInput) =>
   template.mode === input.mode &&
   (template.phases.some((phase) => phase === input.phaseOrDomain) || template.domains.includes(input.phaseOrDomain)) &&
+  template.levels.includes(input.level) &&
   matchesRequiredEquipment(template, input.equipment);
 
 const getCandidates = (input: MatchInput, relaxed: ReadonlySet<RelaxationStep>) =>
@@ -199,6 +195,37 @@ const makeCombinations = (candidates: ScoredTemplate[]): CandidateCombination[] 
   );
 };
 
+const sharedTaskCount = (left: CandidateCombination, right: CandidateCombination) => {
+  const rightIds = new Set(right.candidates.map((candidate) => candidate.template.id));
+  return left.candidates.filter((candidate) => rightIds.has(candidate.template.id)).length;
+};
+
+/**
+ * Keeps the highest-ranked combination first. Subsequent alternatives are chosen
+ * against the immediately preceding result so each click changes as much as
+ * possible without using randomness.
+ */
+const orderAlternatives = (combinations: CandidateCombination[]) => {
+  if (combinations.length < 2) return combinations;
+
+  const remaining = [...combinations];
+  const ordered = [remaining.shift()!];
+
+  while (remaining.length > 0) {
+    const previous = ordered.at(-1)!;
+    remaining.sort(
+      (left, right) =>
+        sharedTaskCount(left, previous) - sharedTaskCount(right, previous) ||
+        right.distinctConstraints - left.distinctConstraints ||
+        right.totalScore - left.totalScore ||
+        left.idKey.localeCompare(right.idKey),
+    );
+    ordered.push(remaining.shift()!);
+  }
+
+  return ordered;
+};
+
 /**
  * Returns one task in each direction. Matching is deliberately deterministic:
  * identical input always produces the same card order and alternative cycle.
@@ -225,8 +252,9 @@ export const matchTasks = (input: MatchInput, alternativeIndex = 0): MatchResult
     };
   }
 
-  const selectedAlternative = ((alternativeIndex % combinations.length) + combinations.length) % combinations.length;
-  const selected = combinations[selectedAlternative];
+  const orderedCombinations = orderAlternatives(combinations);
+  const selectedAlternative = ((alternativeIndex % orderedCombinations.length) + orderedCombinations.length) % orderedCombinations.length;
+  const selected = orderedCombinations[selectedAlternative];
   const trace: MatchTrace[] = selected.candidates.map(({ template, score, matched }) => ({
     templateId: template.id,
     score,
@@ -236,7 +264,7 @@ export const matchTasks = (input: MatchInput, alternativeIndex = 0): MatchResult
   return {
     cards: selected.candidates.map((candidate) => candidate.template),
     relaxationSteps: [...relaxed],
-    alternativeCount: combinations.length,
+    alternativeCount: orderedCombinations.length,
     selectedAlternative,
     trace,
   };

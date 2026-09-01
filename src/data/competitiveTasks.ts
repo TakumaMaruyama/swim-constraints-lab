@@ -1,5 +1,6 @@
 import type {
   CardDirection,
+  CompetitiveLevel,
   CompetitivePhase,
   ConstraintCategory,
   CueStyle,
@@ -7,8 +8,8 @@ import type {
   FeedbackStyle,
   GoalId,
   PresentationOrder,
+  PracticePrescription,
   TaskTemplate,
-  TargetLevel,
   VariabilityLevel,
 } from "../types";
 import { equipmentFunctionLabels } from "./options";
@@ -21,7 +22,7 @@ type TaskSpec = {
   summary: string;
   observedTag: string;
   goal: GoalId;
-  level: TargetLevel;
+  level: CompetitiveLevel;
   primaryConstraint: ConstraintCategory;
   primaryConstraintLabel: string;
   requiredEquipment: EquipmentId[];
@@ -36,7 +37,7 @@ type TaskSpec = {
   participantChoices: string[];
   successCriteria: string[];
   coachObservation: string;
-  suggestedDose: string;
+  prescription: PracticePrescription;
   variabilityLevel: VariabilityLevel;
   presentationOrder: PresentationOrder;
   cueStyle: CueStyle;
@@ -47,39 +48,7 @@ type TaskSpec = {
   largeGroup: string;
   transferConnection: string;
   evidenceIds: string[];
-};
-
-type BaselineOverride = Pick<TaskSpec, "setup" | "instructions">;
-
-const noEquipmentBaselines: Record<string, BaselineOverride> = {
-  "comp-start-establish-01": {
-    setup: "プール底の既存ラインを距離の目安にし、腰掛け姿勢から始める",
-    instructions: ["合図で前方へ入り、最初の既存ラインまで進む", "2本目は腕の形を変えて同じ距離を目指す"],
-  },
-  "comp-start-explore-02": {
-    setup: "プール底の既存ラインを見ながら、浅めと深めの入水を比べられる区間を作る",
-    instructions: ["1本目は浅め、2本目は深めの入水を本人が選ぶ", "既存ラインまで最も前へ進んだ方法を残す"],
-  },
-  "comp-turn-establish-01": {
-    setup: "壁までおよそ3ストロークになる開始位置を本人の通常の泳ぎから決める",
-    instructions: ["決めた開始位置から3ストロークで壁へ入る", "接触後は壁を押して浮上する"],
-  },
-  "comp-underwater-establish-02": {
-    setup: "壁から本人が8mと見積もる地点までを観察区間にし、フィンなしで行う",
-    instructions: ["壁を押した姿勢を保ち、見積もった地点までキックする", "2本目は本人が腕の位置を選ぶ"],
-  },
-  "comp-underwater-explore-02": {
-    setup: "浅い軌道と深い軌道を本人がイメージし、同じ水中区間で比べる",
-    instructions: ["本人が浅い軌道か深い軌道を選び、10mを目安に進む", "2回目は違う軌道を試して差を言葉にする"],
-  },
-  "comp-breakout-establish-01": {
-    setup: "本人が浮上する地点を一つ決め、そこから第一ストロークまでを観察する",
-    instructions: ["決めた地点付近で浮上し、間を空けず第一ストロークを入れる", "4本とも同じ順序で行う"],
-  },
-  "comp-finish-establish-01": {
-    setup: "壁前およそ2mを本人の通常の泳ぎから見積もり、そこからを観察区間にする",
-    instructions: ["見積もった地点から速度を落とさず壁へ触れる", "触れるまで最後の呼吸を入れない"],
-  },
+  evidenceNote?: string;
 };
 
 const equipmentFunctionsFor = (equipment: EquipmentId[]) => {
@@ -287,19 +256,73 @@ const coachText = (text: string): string => text
   .replaceAll("実場面", "実際の場面")
   .replaceAll("レースペース", "レースの速さ");
 
-const suggestedDoseByPhase: Record<CompetitivePhase, string> = {
-  start: "5〜15mを4回。1回ごとに30秒休む。",
-  turn: "壁の前後5〜10mを4回。1回ごとに30秒休む。",
-  underwater: "水中5〜15mを4回。1回ごとに30秒休む。",
-  breakout: "浮上から25mまでを4回。1回ごとに30秒休む。",
-  swimming: "25mを4本。1本ごとに30秒休む。",
-  finish: "壁前5〜10mを4回。1回ごとに30秒休む。",
+const prescriptionFor = (
+  phase: CompetitivePhase,
+  level: CompetitiveLevel,
+  taskTitle: string,
+): PracticePrescription => {
+  const activityNote: Record<CompetitiveLevel, string> = {
+    intro: "やり方を1つに決めて行う",
+    develop: "2つのやり方を比べる",
+    race: "レースに近い速さ・合図で行う",
+  };
+  const oneRepByPhase: Record<CompetitivePhase, Record<CompetitiveLevel, string>> = {
+    start: {
+      intro: "スタートから5mまで",
+      develop: "スタートから10mまで",
+      race: "スタートから15mまで",
+    },
+    turn: {
+      intro: "壁の3m手前からターンし、壁を蹴って3m進む",
+      develop: "壁の5m手前からターンし、壁を蹴って5m進む",
+      race: "壁の5m手前からターンし、壁を蹴って10m進む",
+    },
+    underwater: {
+      intro: "壁を蹴って水中を5m進み、浮上する",
+      develop: "壁を蹴って水中を8m進み、浮上する",
+      race: "壁を蹴って水中を10m進み、浮上する",
+    },
+    breakout: {
+      intro: "水中から浮上し、10m地点まで泳ぐ",
+      develop: "水中から浮上し、15m地点まで泳ぐ",
+      race: "水中から浮上し、25m地点まで泳ぐ",
+    },
+    swimming: {
+      intro: "決めた泳ぎ方で15m泳ぐ",
+      develop: "決めた泳ぎ方で25m泳ぐ",
+      race: "決めた泳ぎ方で50m泳ぐ",
+    },
+    finish: {
+      intro: "壁の3m手前から速度を落とさずタッチする",
+      develop: "壁の5m手前から速度を落とさずタッチする",
+      race: "25mを泳ぎ、最後の5mから速度を落とさずタッチする",
+    },
+  };
+  const repetitions: Record<CompetitiveLevel, string> = {
+    intro: "3本",
+    develop: "4本",
+    race: "3本",
+  };
+  const recovery: Record<CompetitiveLevel, string> = {
+    intro: "1本ごと45秒休む",
+    develop: "1本ごと45秒休む",
+    race: "1本ごと60秒休む",
+  };
+
+  return {
+    activity: `${coachText(taskTitle)}（${activityNote[level]}）`,
+    oneRep: oneRepByPhase[phase][level],
+    repetitions: repetitions[level],
+    recovery: recovery[level],
+  };
 };
 
-const makeTask = (s: TaskSpec): TaskTemplate => {
-  const baseline = noEquipmentBaselines[s.id];
-  const requiredEquipment = baseline ? [] : s.requiredEquipment.filter((equipment) => equipment !== "none");
-  const optionalEquipment = baseline ? [] : s.optionalEquipment.filter((equipment) => equipment !== "none");
+const makeTask = (s: TaskSpec): TaskTemplate & { prescription: PracticePrescription } => {
+  // まず用具なしで成立させ、用具は必要に応じて足せる候補として扱う。
+  const requiredEquipment: EquipmentId[] = [];
+  const optionalEquipment = [...s.requiredEquipment, ...s.optionalEquipment]
+    .filter((equipment) => equipment !== "none")
+    .filter((equipment, index, all) => all.indexOf(equipment) === index);
 
   return {
     id: s.id, mode: "competitive", direction: s.direction, title: coachText(s.title),
@@ -308,27 +331,33 @@ const makeTask = (s: TaskSpec): TaskTemplate => {
     primaryConstraintLabel: coachText(s.primaryConstraintLabel), fixedConditions: s.fixedConditions.map(coachText),
     requiredEquipment, optionalEquipment,
     equipmentFunctions: equipmentFunctionsFor([...requiredEquipment, ...optionalEquipment]),
-    environmentTags: s.environmentTags, setup: coachText(baseline?.setup ?? s.setup),
-    instructions: (baseline?.instructions ?? s.instructions).map(coachText),
+    environmentTags: s.environmentTags, setup: coachText(s.setup),
+    instructions: s.instructions.map(coachText),
     participantCue: coachText(s.participantCue), informationToUse: s.informationToUse.map(coachText),
     permittedSolutions: s.permittedSolutions.map(coachText), participantChoices: s.participantChoices.map(coachText),
     successCriteria: s.successCriteria.map(coachText), coachObservation: coachText(s.coachObservation),
-    suggestedDose: suggestedDoseByPhase[s.phase], variabilityLevel: s.variabilityLevel,
+    prescription: {
+      activity: coachText(s.prescription.activity),
+      oneRep: coachText(s.prescription.oneRep),
+      repetitions: coachText(s.prescription.repetitions),
+      recovery: coachText(s.prescription.recovery),
+    }, variabilityLevel: s.variabilityLevel,
     presentationOrder: s.presentationOrder, cueStyle: s.cueStyle, feedbackStyle: s.feedbackStyle,
     easier: coachText(s.easier), harder: coachText(s.harder), noEquipment: coachText(s.noEquipment),
     largeGroup: coachText(s.largeGroup), transferConnection: coachText(s.transferConnection),
-    evidenceIds: s.evidenceIds, evidenceNote: "監修前の案です。参考資料は練習の考え方を支えるもので、この練習の効果を保証するものではありません。",
+    evidenceIds: s.evidenceIds, evidenceNote: s.evidenceNote ?? "監修前の案です。参考資料は練習の考え方を支えるもので、この練習の効果を保証するものではありません。",
     reviewStatus: "draft",
   };
 };
 
-const common = (id: string, phase: CompetitivePhase, direction: CardDirection, title: string, summary: string, observedTag: string, goal: GoalId, level: TargetLevel, primaryConstraint: ConstraintCategory, primaryConstraintLabel: string, setup: string, instructions: string[], participantCue: string, successCriteria: string[], coachObservation: string, easier: string, harder: string, noEquipment: string, largeGroup: string, transferConnection: string, requiredEquipment: EquipmentId[] = ["none"], optionalEquipment: EquipmentId[] = ["marker"], variabilityLevel: VariabilityLevel = "narrow", presentationOrder: PresentationOrder = "block", cueStyle: CueStyle = "outcome", feedbackStyle: FeedbackStyle = "oneObservation"): TaskSpec => ({
+const common = (id: string, phase: CompetitivePhase, direction: CardDirection, title: string, summary: string, observedTag: string, goal: GoalId, level: CompetitiveLevel, primaryConstraint: ConstraintCategory, primaryConstraintLabel: string, setup: string, instructions: string[], participantCue: string, successCriteria: string[], coachObservation: string, easier: string, harder: string, noEquipment: string, largeGroup: string, transferConnection: string, requiredEquipment: EquipmentId[] = ["none"], optionalEquipment: EquipmentId[] = ["marker"], variabilityLevel: VariabilityLevel = "narrow", presentationOrder: PresentationOrder = "block", cueStyle: CueStyle = "outcome", feedbackStyle: FeedbackStyle = "oneObservation"): TaskSpec => ({
   id, phase, direction, title, summary, observedTag, goal, level, primaryConstraint, primaryConstraintLabel,
   requiredEquipment, optionalEquipment, fixedConditions: ["上手な形を教え込まず、ねらった動きができたかを見る"],
   environmentTags: ["プール長", "水上・水中マーカー", "個人・ペア・集団"], setup, instructions,
   participantCue, informationToUse: ["壁・マーカーとの距離", "自分が選んだ方法と結果"],
   permittedSolutions: ["テンポや深さを自分で調整する", "複数の動作方法を試す"],
-  participantChoices: ["試す順番", "動作の強さ"], successCriteria, coachObservation, suggestedDose: "局面ごとの距離を4回",
+  participantChoices: ["試す順番", "動作の強さ"], successCriteria, coachObservation,
+  prescription: prescriptionFor(phase, level, title),
   variabilityLevel, presentationOrder, cueStyle, feedbackStyle, easier, harder, noEquipment, largeGroup, transferConnection,
   evidenceIds: ["seifert-2014", "sheaff-book"],
 });
@@ -376,4 +405,515 @@ const specs: TaskSpec[] = [
   common("comp-finish-transfer-02", "finish", "transfer", "相手位置を使うフィニッシュ", "隣泳者との位置関係を情報にして速度を保つ", "相手との位置関係", "transfer", "race", "environment", "隣泳者と終了地点を制約にする", "隣レーンを半身差で並走させ、壁前10mを観察区間にする", ["相手の位置を一度だけ確認し、最後の呼吸とタッチを選ぶ", "壁に触れた後、使った情報を答える"], "相手ではなく壁の面へ速度を運ぶ", ["相手がいてもタッチ前に流れない", "壁情報と相手情報の使い分けを説明する"], "相手との距離、最後の呼吸、タッチ時の速度を見る", "単独で壁前10mを行う", "相手の位置を直前に変え、タッチ方法も選ばせる", "歩行で相手との距離変化を体験する", "2ペアを交互にスタートさせる", "競技会の接戦で壁へ入る判断へつなげる", ["none"], ["marker"], "medium", "natural", "externalFar", "onRequest"),
 ];
 
-export const competitiveTasks: TaskTemplate[] = specs.map(makeTask);
+const competitiveLevels = ["intro", "develop", "race"] as const;
+const levelLabels: Record<(typeof competitiveLevels)[number], string> = {
+  intro: "導入",
+  develop: "発展",
+  race: "レース実践",
+};
+
+const levelNotes: Record<(typeof competitiveLevels)[number], string> = {
+  intro: "動きを止めずに、まず決めた区間を最後まで行います。",
+  develop: "方法を少し変え、結果の違いを比べます。",
+  race: "合図や周りの変化があっても、自分で方法を選んで行います。",
+};
+
+const taskLabels: Record<string, string> = {
+  "comp-start-establish-01": "合図から入水までを止めずにつなぐ",
+  "comp-start-establish-02": "入水の角度を決めた範囲に収める",
+  "comp-start-explore-01": "構える位置を変えてスタートを比べる",
+  "comp-start-explore-02": "浅い入水と深い入水を比べる",
+  "comp-start-transfer-01": "隣に選手がいる状態でスタートする",
+  "comp-start-transfer-02": "泳いだ後にもう一度スタートする",
+  "comp-turn-establish-01": "壁前のかき数をそろえてターンする",
+  "comp-turn-establish-02": "ターン後、底のラインへ向かって壁を蹴る",
+  "comp-turn-explore-01": "ターン前に息継ぎする・しないを比べる",
+  "comp-turn-explore-02": "小さく回る・大きく回るターンを比べる",
+  "comp-turn-transfer-01": "泳ぎ方を変えても同じ方向へ壁を蹴る",
+  "comp-turn-transfer-02": "泳いだ後も止まらずターンする",
+  "comp-underwater-establish-01": "同じ深さで決めた回数キックする",
+  "comp-underwater-establish-02": "壁を蹴った姿勢を保つ",
+  "comp-underwater-explore-01": "キックの大きさを変えて比べる",
+  "comp-underwater-explore-02": "浅い・深い水中コースを比べる",
+  "comp-underwater-transfer-01": "ターン後の浮上地点を選ぶ",
+  "comp-underwater-transfer-02": "波がある中で水中の深さを選ぶ",
+  "comp-breakout-establish-01": "浮上後すぐに1かき目を入れる",
+  "comp-breakout-establish-02": "最後のキックから1かき目をつなぐ",
+  "comp-breakout-explore-01": "浮上後の息継ぎ位置を比べる",
+  "comp-breakout-explore-02": "浮上する角度を2通り比べる",
+  "comp-breakout-transfer-01": "レースの速さで水中から泳ぎ出す",
+  "comp-breakout-transfer-02": "隣に選手がいる状態で浮上する",
+  "comp-swimming-establish-01": "一定のリズムで泳ぐ",
+  "comp-swimming-establish-02": "かき数の幅を保って泳ぐ",
+  "comp-swimming-explore-01": "左右の息継ぎを比べる",
+  "comp-swimming-explore-02": "腕と脚の使い方を比べる",
+  "comp-swimming-transfer-01": "途中で泳ぐ速さを変える",
+  "comp-swimming-transfer-02": "波に合わせて息継ぎする側を選ぶ",
+  "comp-finish-establish-01": "壁まで速度を保ってタッチする",
+  "comp-finish-establish-02": "壁に詰まらず両手でタッチする",
+  "comp-finish-explore-01": "最後に息継ぎする位置を比べる",
+  "comp-finish-explore-02": "片手・両手のタッチを比べる",
+  "comp-finish-transfer-01": "疲れた後も壁まで泳ぎ切る",
+  "comp-finish-transfer-02": "隣の選手がいても壁まで泳ぎ切る",
+};
+
+// 表示用の実施メニューは、局面名だけで済ませず「何をするか」を課題ごとに残す。
+// 距離・本数は下の段階別処方で統一し、元の課題にあった比較や観察の焦点はここに置く。
+const taskPracticeDetails: Record<string, string> = {
+  "comp-start-establish-01": "合図で前へ出て、腕の形を一つ決めたまま入水する",
+  "comp-start-establish-02": "水面と底ラインの間で決めた入水の角度を通り、そのまま前へ進む",
+  "comp-start-explore-01": "構える位置を前寄り・中央寄りで試し、進み方を比べる",
+  "comp-start-explore-02": "浅め・深めの入水を試し、浮上まで進みやすい方を選ぶ",
+  "comp-start-transfer-01": "隣の選手と並んで、合図で自分のレーンへスタートする",
+  "comp-start-transfer-02": "指定距離を泳いだ直後にスタートし、入水から水中の動きをつなげる",
+  "comp-turn-establish-01": "壁の手前から決めたかき数で入り、壁を蹴って進む",
+  "comp-turn-establish-02": "回転して壁に触れ、底のラインへ向けて壁を蹴る",
+  "comp-turn-explore-01": "ターン前に息継ぎする方法・しない方法を試す",
+  "comp-turn-explore-02": "小さく回る方法・大きく回る方法でターンし、浮上位置を比べる",
+  "comp-turn-transfer-01": "クロール・背泳ぎを切り替えながら、同じ方向へ壁を蹴る",
+  "comp-turn-transfer-02": "指定距離を泳いだ後、壁の手前から止まらずターンする",
+  "comp-underwater-establish-01": "壁を蹴った後、決めた回数だけ同じ深さでキックして浮上する",
+  "comp-underwater-establish-02": "壁を蹴った姿勢を保ち、腕を伸ばしたまま水中を進む",
+  "comp-underwater-explore-01": "キックの大きさを変え、進みやすさを比べる",
+  "comp-underwater-explore-02": "浅いコース・深いコースを通り、浮上までの進み方を比べる",
+  "comp-underwater-transfer-01": "ターン後に浮上する場所を選び、次の泳ぎへつなげる",
+  "comp-underwater-transfer-02": "隣の選手が作る波の中で、深さかキック数を一つ選ぶ",
+  "comp-breakout-establish-01": "浮上したら間を空けず、すぐに1かき目を入れる",
+  "comp-breakout-establish-02": "水中の最後のキックから、間を空けずに1かき目を入れる",
+  "comp-breakout-explore-01": "浮上後に早め・遅めで息継ぎし、進みやすさを比べる",
+  "comp-breakout-explore-02": "浅く浮上する方法・立ち上がる方法を試し、止まりにくさを比べる",
+  "comp-breakout-transfer-01": "レースに近い速さで浮上し、選んだ位置で最初の息継ぎをする",
+  "comp-breakout-transfer-02": "隣に選手がいる中でも、自分の浮上位置で水面に出て泳ぎ始める",
+  "comp-swimming-establish-01": "一定のリズムを自分で保ち、かく間隔をそろえて泳ぐ",
+  "comp-swimming-establish-02": "自然なかき数・少なめ・多めのかき数を試し、進み方を比べる",
+  "comp-swimming-explore-01": "右呼吸・左呼吸・呼吸の間隔を変える方法を試し、姿勢を比べる",
+  "comp-swimming-explore-02": "腕を主に使う・脚を主に使う・両方を使う泳ぎを試し、リズムを比べる",
+  "comp-swimming-transfer-01": "区間ごとに泳ぐ速さを変え、腕と脚の動きを止めずにつなげる",
+  "comp-swimming-transfer-02": "隣レーンの波に合わせ、息継ぎする側かテンポを一つ変えて泳ぐ",
+  "comp-finish-establish-01": "壁の手前から速さを落とさず、そのままタッチする",
+  "comp-finish-establish-02": "最後の息継ぎを終え、両手を同時に壁へ伸ばしてタッチする",
+  "comp-finish-explore-01": "壁の手前で息継ぎする方法・しない方法を試し、タッチまでを比べる",
+  "comp-finish-explore-02": "クロール・平泳ぎで片手・両手のタッチを試し、壁への届き方を比べる",
+  "comp-finish-transfer-01": "指定距離を泳いだ後、壁の手前で呼吸とタッチ方法を自分で選ぶ",
+  "comp-finish-transfer-02": "隣の選手と並び、壁を見てタッチする",
+};
+
+// 転移課題でも、導入ではまず穏やかな条件で一回できることを確かめる。
+// 比較する条件は発展、隣の選手・波・疲れなど実戦に近い条件はレース実践で扱う。
+const stagePracticeDetails: Partial<Record<string, Record<CompetitiveLevel, string>>> = {
+  "comp-start-transfer-01": {
+    intro: "単独で通常の合図に合わせてスタートし、自分のレーンへ進む",
+    develop: "単独と並走の違いを比べ、合図で自分のレーンへスタートする",
+    race: "隣の選手と並んで、合図で自分のレーンへスタートする",
+  },
+  "comp-turn-transfer-02": {
+    intro: "短く泳いだ後、壁の手前から止まらずターンする",
+    develop: "泳いだ距離を変えた後、壁の手前から止まらずターンする",
+    race: "長く泳いだ後も、壁の手前から止まらずターンする",
+  },
+  "comp-underwater-transfer-02": {
+    intro: "水面が静かな時に、水中を通る深さかキック数を一つ決める",
+    develop: "水面が穏やかな時と揺れた時を比べ、深さかキック数を選ぶ",
+    race: "隣の選手が作る波の中で、深さかキック数を一つ選ぶ",
+  },
+  "comp-breakout-transfer-02": {
+    intro: "単独で、自分の浮上位置で水面に出て泳ぎ始める",
+    develop: "単独と並走の違いを比べ、自分の浮上位置で泳ぎ始める",
+    race: "隣に選手がいる中でも、自分の浮上位置で水面に出て泳ぎ始める",
+  },
+  "comp-swimming-transfer-02": {
+    intro: "水面が静かな時に、息継ぎする側かリズムを一つ決めて泳ぐ",
+    develop: "水面が穏やかな時と揺れた時を比べ、息継ぎする側かリズムを選ぶ",
+    race: "隣レーンの波に合わせ、息継ぎする側かリズムを一つ変えて泳ぐ",
+  },
+  "comp-finish-transfer-01": {
+    intro: "余裕がある状態で、壁の手前から呼吸とタッチ方法を選ぶ",
+    develop: "疲れを感じ始めた状態で、呼吸あり・なしを比べてタッチする",
+    race: "指定距離を泳いだ後、壁の手前で呼吸とタッチ方法を自分で選ぶ",
+  },
+  "comp-finish-transfer-02": {
+    intro: "単独で、壁を見てタッチする",
+    develop: "単独と並走の違いを比べ、壁を見てタッチする",
+    race: "隣の選手と並び、壁を見てタッチする",
+  },
+};
+
+const practiceDetailFor = (spec: TaskSpec, level: CompetitiveLevel): string =>
+  stagePracticeDetails[spec.id]?.[level] ?? taskPracticeDetails[spec.id] ?? coachText(spec.title);
+
+type IntroDisplayOverride = Pick<
+  TaskSpec,
+  | "title"
+  | "summary"
+  | "observedTag"
+  | "primaryConstraintLabel"
+  | "fixedConditions"
+  | "informationToUse"
+  | "permittedSolutions"
+  | "participantChoices"
+  | "coachObservation"
+  | "easier"
+  | "harder"
+  | "noEquipment"
+  | "largeGroup"
+  | "transferConnection"
+  | "evidenceNote"
+>;
+
+// 導入カードは「隣・波・疲れ」を読む前提にしない。表示される全項目を単独・穏やかな条件にそろえる。
+const introDisplayOverrides: Record<string, IntroDisplayOverride> = {
+  "comp-start-transfer-01": {
+    title: "通常の合図で単独スタート",
+    summary: "通常の合図で、一人でスタートして自分のレーンへ進む",
+    observedTag: "合図後の動き出しが遅い",
+    primaryConstraintLabel: "通常の合図",
+    fixedConditions: ["一人で、同じ合図から始める"],
+    informationToUse: ["合図", "自分の入水後の進み方"],
+    permittedSolutions: ["構える位置を自分で決める"],
+    participantChoices: ["構える位置", "腕の形"],
+    coachObservation: "合図から動き出すまでと、入水後の進み方を見る",
+    easier: "壁際のしゃがみ姿勢から始める",
+    harder: "スタートする場所を変えて比べる",
+    noEquipment: "底ラインを進む目印にする",
+    largeGroup: "一人ずつ合図で出発する",
+    transferConnection: "通常の合図から、自分のスタートをそろえる練習につなげる",
+    evidenceNote: "監修前の案です。単独での動き出しを確かめる案であり、この練習の効果を保証するものではありません。",
+  },
+  "comp-underwater-transfer-02": {
+    title: "穏やかな水面で水中の深さを選ぶ",
+    summary: "水面が穏やかな中で、水中を通る深さかキック数を決める",
+    observedTag: "水中の深さを決めにくい",
+    primaryConstraintLabel: "穏やかな水面で選ぶ",
+    fixedConditions: ["水面が穏やかな時に、同じレーンで行う"],
+    informationToUse: ["底ライン", "自分の進み方"],
+    permittedSolutions: ["深さかキック数を一つ決める"],
+    participantChoices: ["水中を通る深さ", "キック数"],
+    coachObservation: "選んだ深さかキック数と、浮上までの進み方を見る",
+    easier: "水中を通る深さを一つに決める",
+    harder: "深さとキック数の組み合わせを比べる",
+    noEquipment: "底ラインを深さの目印にする",
+    largeGroup: "同じ深さを選ぶ組で順番に行う",
+    transferConnection: "水中で自分に合う深さを選ぶ練習につなげる",
+    evidenceNote: "監修前の案です。穏やかな水面での選び方を確かめる案であり、この練習の効果を保証するものではありません。",
+  },
+  "comp-breakout-transfer-02": {
+    title: "単独で浮上して泳ぎ始める",
+    summary: "一人で、自分の浮上位置から水面に出て泳ぎ始める",
+    observedTag: "浮上後に泳ぎ始めるまで間が空く",
+    primaryConstraintLabel: "単独で浮上位置を決める",
+    fixedConditions: ["一人で、同じレーンを使う"],
+    informationToUse: ["自分の浮上位置", "水面に出た後の進み方"],
+    permittedSolutions: ["浮上する場所を自分で決める"],
+    participantChoices: ["浮上する場所", "最初のひとかきの速さ"],
+    coachObservation: "浮上位置と泳ぎ始めるまでの間を見る",
+    easier: "浮上する場所を一つに決める",
+    harder: "浮上する場所を変えて比べる",
+    noEquipment: "底ラインを浮上の目印にする",
+    largeGroup: "一人ずつ壁から出発する",
+    transferConnection: "自分で決めた浮上位置から泳ぎ始める練習につなげる",
+    evidenceNote: "監修前の案です。単独での浮上と泳ぎ始めを確かめる案であり、この練習の効果を保証するものではありません。",
+  },
+  "comp-swimming-transfer-02": {
+    title: "穏やかな水面で息継ぎする側を選ぶ",
+    summary: "水面が穏やかな中で、息継ぎする側かリズムを決めて泳ぐ",
+    observedTag: "息継ぎする側を決めにくい",
+    primaryConstraintLabel: "穏やかな水面で選ぶ",
+    fixedConditions: ["水面が穏やかな時に、一人で行う"],
+    informationToUse: ["水面の見え方", "自分の呼吸と進み方"],
+    permittedSolutions: ["息継ぎする側かリズムを一つ決める"],
+    participantChoices: ["息継ぎする側", "泳ぐリズム"],
+    coachObservation: "選んだ息継ぎ側かリズムと、進み方を見る",
+    easier: "息継ぎする側を一つに決める",
+    harder: "息継ぎする側とリズムを比べる",
+    noEquipment: "自分の呼吸のしやすさを目印にする",
+    largeGroup: "一人ずつ十分な間隔で泳ぐ",
+    transferConnection: "穏やかな水面で自分の呼吸の仕方を選ぶ練習につなげる",
+    evidenceNote: "監修前の案です。穏やかな水面での呼吸の選び方を確かめる案であり、この練習の効果を保証するものではありません。",
+  },
+  "comp-finish-transfer-01": {
+    title: "余裕がある時に呼吸とタッチを選ぶ",
+    summary: "余裕がある状態で、壁の手前から呼吸とタッチ方法を選ぶ",
+    observedTag: "壁の手前で呼吸とタッチを選びにくい",
+    primaryConstraintLabel: "余裕がある状態で選ぶ",
+    fixedConditions: ["余裕がある時に、壁へ向かって行う"],
+    informationToUse: ["壁までの見え方", "最後の呼吸のしやすさ"],
+    permittedSolutions: ["呼吸するか、タッチ方法を自分で決める"],
+    participantChoices: ["最後の呼吸", "タッチ方法"],
+    coachObservation: "選んだ呼吸とタッチ方法、壁への進み方を見る",
+    easier: "呼吸するかしないかを先に決める",
+    harder: "呼吸とタッチ方法の組み合わせを比べる",
+    noEquipment: "壁の見え方を目印にする",
+    largeGroup: "一人ずつ壁へ向かう",
+    transferConnection: "余裕がある時に壁へ入る方法を選ぶ練習につなげる",
+    evidenceNote: "監修前の案です。余裕がある時のタッチ方法を確かめる案であり、この練習の効果を保証するものではありません。",
+  },
+  "comp-finish-transfer-02": {
+    title: "単独で壁を見てタッチする",
+    summary: "一人で壁へ向かい、最後まで壁を見てタッチする",
+    observedTag: "壁の手前で流してしまう",
+    primaryConstraintLabel: "単独で壁へ向かう",
+    fixedConditions: ["一人で、壁へ向かって行う"],
+    informationToUse: ["壁までの見え方", "最後の呼吸のしやすさ"],
+    permittedSolutions: ["最後の呼吸とタッチ方法を自分で決める"],
+    participantChoices: ["最後の呼吸", "タッチ方法"],
+    coachObservation: "壁の手前で流さずタッチできたかを見る",
+    easier: "壁の近くから始める",
+    harder: "始める位置を少し遠くする",
+    noEquipment: "壁の見え方を目印にする",
+    largeGroup: "一人ずつ壁へ向かう",
+    transferConnection: "一人で壁を見てタッチする練習につなげる",
+    evidenceNote: "監修前の案です。単独でのタッチを確かめる案であり、この練習の効果を保証するものではありません。",
+  },
+};
+
+type IntroFieldOverride = Partial<IntroDisplayOverride>;
+
+// 導入で表示する調整・接続の文も、後段の実戦条件を前提にしない。
+const introConditionOverrides: Record<string, IntroFieldOverride> = {
+  "comp-start-explore-01": {
+    harder: "構える位置を直前に指定し、合図後の進み方を比べる",
+  },
+  "comp-start-transfer-02": {
+    largeGroup: "短い泳ぎの後に順番にスタートする",
+    transferConnection: "泳いだ後もスタートの流れをつなげる練習につなげる",
+  },
+  "comp-turn-explore-01": {
+    largeGroup: "二つの方法を順番に行い比べる",
+  },
+  "comp-turn-explore-02": {
+    harder: "回り方と浮上する場所を一つずつ変えて比べる",
+  },
+  "comp-turn-transfer-02": {
+    primaryConstraintLabel: "泳いだ後も壁までのかき数を判断する",
+    easier: "短い泳ぎの後に実施する",
+    noEquipment: "陸上の歩数で壁までの距離判断を確かめる",
+  },
+  "comp-underwater-explore-02": {
+    harder: "深さと浮上する場所の組み合わせを増やす",
+    transferConnection: "水中で選んだ深さから浮上する練習へつなげる",
+  },
+  "comp-breakout-explore-02": {
+    harder: "浮上する角度を直前に決めて試す",
+    transferConnection: "水中から自分で選んだ角度で浮上する練習へつなげる",
+  },
+  "comp-breakout-transfer-01": {
+    harder: "速さを少し上げて同じ区間を行う",
+  },
+  "comp-swimming-establish-02": {
+    harder: "かき数の幅を広げて比べる",
+  },
+  "comp-swimming-explore-01": {
+    harder: "呼吸側を直前に決めて泳ぐ",
+    transferConnection: "壁の位置に合わせて息継ぎする側を選ぶ練習につなげる",
+  },
+  "comp-swimming-transfer-01": {
+    coachObservation: "区間ごとの速度、ストローク長、動きのつながりを見る",
+  },
+  "comp-finish-establish-02": {
+    harder: "同じ壁への入り方で進む速さを変える",
+  },
+};
+
+const neutralSetupByPhase: Record<CompetitivePhase, string> = {
+  start: "安全に入水できるレーンを一つ確保し、底ラインや水面を進む目印にする",
+  turn: "壁の前後を続けて使えるレーンを確保し、底ラインを進む目印にする",
+  underwater: "壁から水中へ進める空いたレーンを確保し、底ラインを進む目印にする",
+  breakout: "水中から浮上して泳ぎ始められる空いたレーンを確保する",
+  swimming: "他の選手と十分に間隔を空けて泳げるレーンを確保する",
+  finish: "壁へ向かって最後まで泳げるレーンを確保し、次の選手との間隔を空ける",
+};
+
+const taskOutcomeById: Record<string, string> = {
+  "comp-start-establish-01": "合図から入水までの動きを止めずにつなげられる。",
+  "comp-start-establish-02": "決めた入水の角度を保って前へ進める。",
+  "comp-start-explore-01": "構える位置による進み方の違いを言える。",
+  "comp-start-explore-02": "入水の深さによる浮上までの違いを言える。",
+  "comp-start-transfer-01": "隣に選手がいても自分の合図で動き出せる。",
+  "comp-start-transfer-02": "泳いだ後も入水から水中の動きをつなげられる。",
+  "comp-turn-establish-01": "壁へ入るかき数をそろえられる。",
+  "comp-turn-establish-02": "壁を蹴った後に底ラインへ向かえる。",
+  "comp-turn-explore-01": "息継ぎの有無によるターンの違いを言える。",
+  "comp-turn-explore-02": "回り方による浮上位置の違いを言える。",
+  "comp-turn-transfer-01": "泳ぎ方を変えても同じ方向へ壁を蹴れる。",
+  "comp-turn-transfer-02": "泳いだ後も壁の手前で止まらずターンできる。",
+  "comp-underwater-establish-01": "決めた回数のキックを同じ深さで続けられる。",
+  "comp-underwater-establish-02": "壁を蹴った姿勢を水中で保てる。",
+  "comp-underwater-explore-01": "キックの大きさによる進み方の違いを言える。",
+  "comp-underwater-explore-02": "水中を通る深さによる浮上までの違いを言える。",
+  "comp-underwater-transfer-01": "選んだ浮上位置から次の泳ぎへつなげられる。",
+  "comp-underwater-transfer-02": "波があっても深さかキック数を選べる。",
+  "comp-breakout-establish-01": "浮上後に間を空けず最初のひとかきを入れられる。",
+  "comp-breakout-establish-02": "最後のキックから最初のひとかきをつなげられる。",
+  "comp-breakout-explore-01": "息継ぎの早さによる進み方の違いを言える。",
+  "comp-breakout-explore-02": "浮上する角度による泳ぎ始めの違いを言える。",
+  "comp-breakout-transfer-01": "速さを上げても浮上から最初の息継ぎまでつなげられる。",
+  "comp-breakout-transfer-02": "隣に選手がいても自分の浮上位置で泳ぎ始められる。",
+  "comp-swimming-establish-01": "一定のリズムを保って泳げる。",
+  "comp-swimming-establish-02": "かき数を変えた時の進み方を言える。",
+  "comp-swimming-explore-01": "呼吸側や間隔による姿勢の違いを言える。",
+  "comp-swimming-explore-02": "腕と脚の使い方によるリズムの違いを言える。",
+  "comp-swimming-transfer-01": "速さを変えても腕と脚の動きをつなげられる。",
+  "comp-swimming-transfer-02": "波に合わせて選んだ調整を続けられる。",
+  "comp-finish-establish-01": "壁の手前で流さずタッチできる。",
+  "comp-finish-establish-02": "壁に詰まらず両手でタッチできる。",
+  "comp-finish-explore-01": "最後の息継ぎによるタッチまでの違いを言える。",
+  "comp-finish-explore-02": "泳ぎ方に合うタッチ方法を選べる。",
+  "comp-finish-transfer-01": "疲れた後も呼吸とタッチ方法を選べる。",
+  "comp-finish-transfer-02": "隣に選手がいても壁まで速さを保てる。",
+};
+
+const stageOutcomeById: Partial<Record<string, Record<CompetitiveLevel, string>>> = {
+  "comp-start-transfer-01": {
+    intro: "単独で通常の合図に合わせて動き出せる。",
+    develop: "単独と並走での動き出しの違いを言える。",
+    race: "隣に選手がいても自分の合図で動き出せる。",
+  },
+  "comp-turn-transfer-02": {
+    intro: "短く泳いだ後も壁の手前で止まらずターンできる。",
+    develop: "泳いだ距離が変わっても壁の手前で止まらずターンできる。",
+    race: "長く泳いだ後も壁の手前で止まらずターンできる。",
+  },
+  "comp-underwater-transfer-02": {
+    intro: "水面が静かな時に深さかキック数を選べる。",
+    develop: "水面の揺れによる選び方の違いを言える。",
+    race: "波があっても深さかキック数を選べる。",
+  },
+  "comp-breakout-transfer-02": {
+    intro: "単独で自分の浮上位置から泳ぎ始められる。",
+    develop: "単独と並走での浮上位置の違いを言える。",
+    race: "隣に選手がいても自分の浮上位置で泳ぎ始められる。",
+  },
+  "comp-swimming-transfer-02": {
+    intro: "水面が静かな時に選んだ息継ぎ側かリズムを続けられる。",
+    develop: "水面の揺れによる選び方の違いを言える。",
+    race: "波に合わせて選んだ調整を続けられる。",
+  },
+  "comp-finish-transfer-01": {
+    intro: "余裕がある状態で呼吸とタッチ方法を選べる。",
+    develop: "疲れを感じ始めた時の呼吸あり・なしの違いを言える。",
+    race: "疲れた後も呼吸とタッチ方法を選べる。",
+  },
+  "comp-finish-transfer-02": {
+    intro: "単独で壁を見てタッチできる。",
+    develop: "単独と並走でのタッチの違いを言える。",
+    race: "隣に選手がいても壁まで速さを保てる。",
+  },
+};
+
+const stagePrescriptionFor = (spec: TaskSpec, level: CompetitiveLevel): PracticePrescription => {
+  const detail = practiceDetailFor(spec, level);
+  const base = prescriptionFor(spec.phase, level, detail);
+  const stageDetail: Record<CompetitiveLevel, string> = {
+    intro: "決めた方法で行う",
+    develop: "二つの方法を比べて、続ける方を選ぶ",
+    race: "レースに近い速さで、合図か周りの状況が変わっても行う",
+  };
+  const oneRepOverrides: Partial<Record<string, Record<CompetitiveLevel, string>>> = {
+    "comp-start-transfer-02": {
+      intro: "15mを泳いだ後、スタートから5mまで進む",
+      develop: "25mを泳いだ後、スタートから10mまで進む",
+      race: "50mを泳いだ後、スタートから15mまで進む",
+    },
+    "comp-turn-transfer-02": {
+      intro: "25mを泳いだ後、壁の3m手前からターンし、壁を蹴って3m進む",
+      develop: "50mを泳いだ後、壁の5m手前からターンし、壁を蹴って5m進む",
+      race: "75mを泳いだ後、壁の5m手前からターンし、壁を蹴って10m進む",
+    },
+    "comp-underwater-establish-01": {
+      intro: "壁を蹴って3回キックし、5mまでに浮上する",
+      develop: "壁を蹴って5回キックし、8mまでに浮上する",
+      race: "壁を蹴って7回キックし、10mまでに浮上する",
+    },
+    "comp-swimming-transfer-01": {
+      intro: "25mを前半ゆっくり・後半やや速く泳ぐ",
+      develop: "50mを25mごとにゆっくり・速く泳ぐ",
+      race: "100mを25mごとにゆっくり・レースの速さ・ゆっくり・レースの速さで泳ぐ",
+    },
+    "comp-swimming-transfer-02": {
+      intro: "水面が穏やかな25mを泳ぐ",
+      develop: "水面が穏やかな時・揺れた時の25mを泳ぐ",
+      race: "隣レーンの波が変わる中で50mを泳ぐ",
+    },
+    "comp-finish-transfer-01": {
+      intro: "壁の3m手前から、呼吸とタッチ方法を選んで壁まで進む",
+      develop: "25mを泳いだ後、壁の5m手前で呼吸あり・なしを比べてタッチする",
+      race: "75mを泳いだ後、休まず最後の5mで呼吸とタッチ方法を選ぶ",
+    },
+  };
+  const repetitions: Record<CompetitiveLevel, string> = {
+    intro: "3本",
+    develop: "各1本＋選んだ方法を1本",
+    race: "3本",
+  };
+
+  return {
+    ...base,
+    activity: `${detail}。${stageDetail[level]}。`,
+    oneRep: oneRepOverrides[spec.id]?.[level] ?? base.oneRep,
+    repetitions: spec.direction === "explore" && level === "intro"
+      ? "各1本＋選んだ方法を1本"
+      : repetitions[level],
+  };
+};
+
+// 各局面・段階・方向に2案ずつ並ぶよう、36案を3段階へ展開する。
+// 段階ごとの説明と実施量をここで確定し、同じ課題を単に複製した表示にはしない。
+const specsByLevel: TaskSpec[] = specs.flatMap((spec) => competitiveLevels.map((level) => {
+  const label = taskLabels[spec.id] ?? coachText(spec.title);
+  const prescription = stagePrescriptionFor(spec, level);
+  const introOverride = level === "intro"
+    ? { ...introConditionOverrides[spec.id], ...introDisplayOverrides[spec.id] }
+    : undefined;
+  const levelInstruction = level === "intro"
+    ? spec.direction === "explore"
+      ? "二つのやり方を比べ、進みやすかった方を選ぶ。"
+      : "やり方を一つに決め、決めた本数を最後まで行う。"
+    : level === "develop"
+      ? "変えるものを一つだけ選び、二つのやり方を比べて続ける方を選ぶ。"
+      : spec.direction === "explore"
+        ? "レースに近い速さで二つのやり方を比べ、選んだ方で合図か周りの状況を変える。"
+        : "レースに近い速さで行い、合図か周りの状況を変えても続ける。";
+  const levelSuccess = level === "intro"
+    ? spec.direction === "explore"
+      ? "二つのやり方を比べ、進みやすかった方を言える。"
+      : "決めたやり方で、決めた本数を最後まで行える。"
+    : level === "develop"
+      ? "二つのやり方を比べ、続けたい方と理由を言える。"
+      : "速さや合図が変わっても、自分でやり方を選んで最後まで行える。";
+
+  return {
+    ...spec,
+    id: `${spec.id}-${level}`,
+    level,
+    title: `${introOverride?.title ?? label}（${levelLabels[level]}）`,
+    summary: `${introOverride?.summary ?? label}。1本分は「${prescription.oneRep}」。${levelNotes[level]}`,
+    observedTag: introOverride?.observedTag ?? spec.observedTag,
+    primaryConstraintLabel: introOverride?.primaryConstraintLabel ?? spec.primaryConstraintLabel,
+    fixedConditions: introOverride?.fixedConditions ?? spec.fixedConditions,
+    setup: `${neutralSetupByPhase[spec.phase]}。開始位置と終了位置を確認し、次の選手との間隔を空ける。`,
+    instructions: [
+      `1本分は「${prescription.oneRep}」。`,
+      practiceDetailFor(spec, level),
+      levelInstruction,
+    ],
+    participantCue: practiceDetailFor(spec, level),
+    informationToUse: introOverride?.informationToUse ?? spec.informationToUse,
+    permittedSolutions: introOverride?.permittedSolutions ?? spec.permittedSolutions,
+    participantChoices: introOverride?.participantChoices ?? spec.participantChoices,
+    successCriteria: [
+      `「${prescription.oneRep}」を途中でやめずに行える。`,
+      stageOutcomeById[spec.id]?.[level] ?? taskOutcomeById[spec.id] ?? "選んだやり方で最後まで行える。",
+      levelSuccess,
+    ],
+    coachObservation: introOverride?.coachObservation ?? spec.coachObservation,
+    easier: introOverride?.easier ?? spec.easier,
+    harder: introOverride?.harder ?? spec.harder,
+    noEquipment: introOverride?.noEquipment ?? spec.noEquipment,
+    largeGroup: introOverride?.largeGroup ?? spec.largeGroup,
+    transferConnection: introOverride?.transferConnection ?? spec.transferConnection,
+    evidenceNote: introOverride?.evidenceNote,
+    prescription,
+  };
+}));
+
+export const competitiveTasks: Array<TaskTemplate & { prescription: PracticePrescription }> = specsByLevel.map(makeTask);

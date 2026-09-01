@@ -6,6 +6,11 @@ const templates = vi.hoisted(() => [] as TaskTemplate[]);
 vi.mock("../data/taskTemplates", () => ({ taskTemplates: templates }));
 
 import { adjustTask, matchTasks } from "../engine";
+import {
+  getAvailableObservedTagOptions,
+  getAvailablePhaseOrDomainOptions,
+  learnDomainsByLevel,
+} from "../data/formOptions";
 
 const input: MatchInput = {
   mode: "competitive",
@@ -50,7 +55,12 @@ const task = (id: string, direction: TaskTemplate["direction"], overrides: Parti
   participantChoices: ["開始姿勢"],
   successCriteria: ["2回できる"],
   coachObservation: "初動を観察する。",
-  suggestedDose: "3回",
+  prescription: {
+    activity: "合図で壁から動く",
+    oneRep: "15m",
+    repetitions: "3回",
+    recovery: "各回30秒",
+  },
   variabilityLevel: "constant",
   presentationOrder: "block",
   cueStyle: "outcome",
@@ -61,7 +71,7 @@ const task = (id: string, direction: TaskTemplate["direction"], overrides: Parti
   largeGroup: "3人ずつ行う。",
   transferConnection: "レースの合図につなぐ。",
   evidenceIds: ["source-1"],
-  evidenceNote: "監修前ドラフト。",
+  evidenceNote: "監修前の案。",
   reviewStatus: "draft",
   ...overrides,
 });
@@ -88,7 +98,21 @@ describe("matchTasks", () => {
     expect(result.cards.map((card) => card.direction)).toEqual(["establish", "explore", "transfer"]);
     expect(result.cards.map((card) => card.id)).not.toContain("wrong-mode");
     expect(result.cards.map((card) => card.id)).not.toContain("wrong-phase");
-    expect(result.trace.every((trace) => trace.score === 90)).toBe(true);
+    expect(result.trace.every((trace) => trace.score === 80)).toBe(true);
+  });
+
+  it("keeps the selected level as a hard filter", () => {
+    templates.push(
+      task("intro-establish", "establish", { levels: ["intro"] }),
+      task("intro-explore", "explore", { levels: ["intro"] }),
+      task("intro-transfer", "transfer", { levels: ["intro"] }),
+    );
+
+    const result = matchTasks(input);
+
+    expect(result.cards.map((card) => card.id)).not.toContain("intro-establish");
+    expect(result.cards.map((card) => card.id)).not.toContain("intro-explore");
+    expect(result.cards.map((card) => card.id)).not.toContain("intro-transfer");
   });
 
   it("maximizes primary-constraint diversity before score and cycles alternatives stably", () => {
@@ -105,6 +129,21 @@ describe("matchTasks", () => {
     expect(repeated.cards.map((card) => card.id)).toEqual(first.cards.map((card) => card.id));
     expect(next.selectedAlternative).toBe(1);
     expect(matchTasks(input, first.alternativeCount).cards.map((card) => card.id)).toEqual(first.cards.map((card) => card.id));
+  });
+
+  it("orders later alternatives to minimize shared task ids with the previous result", () => {
+    templates.push(
+      task("establish-b", "establish", { primaryConstraint: "task" }),
+      task("explore-b", "explore", { primaryConstraint: "environment" }),
+      task("transfer-b", "transfer", { primaryConstraint: "individual" }),
+    );
+
+    const first = matchTasks(input, 0);
+    const next = matchTasks(input, 1);
+    const firstIds = new Set(first.cards.map((card) => card.id));
+
+    expect(next.cards.filter((card) => firstIds.has(card.id))).toHaveLength(0);
+    expect(matchTasks(input, 1).cards.map((card) => card.id)).toEqual(next.cards.map((card) => card.id));
   });
 
   it("excludes required equipment that is unavailable, and treats none as no required equipment", () => {
@@ -140,7 +179,76 @@ describe("matchTasks", () => {
   });
 });
 
+describe("form catalogue selectors", () => {
+  it("returns only level-specific competitive phases and authored observations", () => {
+    expect(getAvailablePhaseOrDomainOptions("competitive", "develop").map((option) => option.value)).toEqual(["start"]);
+    expect(getAvailablePhaseOrDomainOptions("competitive", "intro")).toEqual([]);
+    expect(getAvailableObservedTagOptions("competitive", "develop", "start").map((option) => option.value))
+      .toEqual(["初動が遅い"]);
+  });
+
+  it("returns a learn domain only when the selected level has all three directions", () => {
+    templates.splice(
+      0,
+      templates.length,
+      task("learn-establish", "establish", {
+        mode: "learnToSwim", phases: [], domains: ["顔つけ"], levels: ["beginner"], observedTags: ["顔をつけたがらない"],
+      }),
+      task("learn-explore", "explore", {
+        mode: "learnToSwim", phases: [], domains: ["顔つけ"], levels: ["beginner"], observedTags: ["顔をすぐ上げる"],
+      }),
+      task("learn-transfer", "transfer", {
+        mode: "learnToSwim", phases: [], domains: ["顔つけ"], levels: ["beginner"], observedTags: ["顔をつけたがらない"],
+      }),
+      task("learn-only-establish", "establish", {
+        mode: "learnToSwim", phases: [], domains: ["背浮き"], levels: ["beginner"],
+      }),
+    );
+
+    expect(getAvailablePhaseOrDomainOptions("learnToSwim", "beginner").map((option) => option.value)).toEqual(["顔つけ"]);
+    expect(getAvailableObservedTagOptions("learnToSwim", "beginner", "顔つけ").map((option) => option.value))
+      .toEqual(["顔をすぐ上げる", "顔をつけたがらない"]);
+  });
+
+  it("limits learn domains to the authored level permission list before checking coverage", () => {
+    templates.splice(
+      0,
+      templates.length,
+      ...(["establish", "explore", "transfer"] as const).flatMap((direction) => [
+        task(`beginner-${direction}`, direction, {
+          mode: "learnToSwim", phases: [], domains: ["水慣れ"], levels: ["beginner"],
+        }),
+        task(`not-beginner-${direction}`, direction, {
+          mode: "learnToSwim", phases: [], domains: ["クロール"], levels: ["beginner"],
+        }),
+      ]),
+    );
+
+    expect(learnDomainsByLevel.beginner).not.toContain("クロール");
+    expect(getAvailablePhaseOrDomainOptions("learnToSwim", "beginner").map((option) => option.value)).toEqual(["水慣れ"]);
+  });
+});
+
 describe("adjustTask", () => {
+  it("makes every adjustment visible in the rendered card content", () => {
+    const actions = ["easier", "harder", "noEquipment", "largeGroup", "changeCue", "moreExplore", "moreTransfer"] as const;
+    const base = task("visible-adjustments", "explore");
+    const visibleState = (rendered: ReturnType<typeof adjustTask>) => ({
+      prescription: rendered.effectivePrescription,
+      setup: rendered.effectiveSetup,
+      instructions: rendered.effectiveInstructions,
+      participantCue: rendered.effectiveParticipantCue,
+      successCriteria: rendered.effectiveSuccessCriteria,
+      equipment: rendered.effectiveEquipment,
+      transferConnection: rendered.effectiveTransferConnection,
+    });
+    const unchanged = visibleState(adjustTask(base, []));
+
+    for (const action of actions) {
+      expect(visibleState(adjustTask(base, [action])), action).not.toEqual(unchanged);
+    }
+  });
+
   it("uses static modifiers and task-specific overrides without generating text", () => {
     const rendered = adjustTask(task("custom", "explore", {
       adjustments: {
@@ -155,5 +263,23 @@ describe("adjustTask", () => {
     expect(rendered.effectiveParticipantCue).toBe("今の1回で、一番やりやすかったのはどこ？");
     expect(rendered.variabilityLevel).toBe("medium");
     expect(rendered.presentationOrder).toBe("natural");
+  });
+
+  it("applies prescription patches without changing unrelated fields", () => {
+    const rendered = adjustTask(task("custom-dose", "establish", {
+      adjustments: {
+        easier: {
+          label: "短くする",
+          prescriptionPatch: { oneRep: "10m", repetitions: "2回" },
+        },
+      },
+    }), ["easier"]);
+
+    expect(rendered.effectivePrescription).toEqual({
+      activity: "合図で壁から動く",
+      oneRep: "10m",
+      repetitions: "2回",
+      recovery: "各回30秒",
+    });
   });
 });

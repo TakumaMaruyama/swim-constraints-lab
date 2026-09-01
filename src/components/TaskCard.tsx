@@ -45,9 +45,39 @@ export function TaskCard({ card, selectedObservedTag, evidence }: TaskCardProps)
   const presentationLabel = presentationOptions.find(({ value }) => value === card.presentationOrder)?.label ?? card.presentationOrder;
   const cueLabel = cueOptions.find(({ value }) => value === card.cueStyle)?.label ?? card.cueStyle;
   const feedbackLabel = feedbackOptions.find(({ value }) => value === card.feedbackStyle)?.label ?? card.feedbackStyle;
+  const adjustmentChanges: Array<{ label: string; value: string }> = [];
+  const prescriptionChanged = (Object.keys(card.prescription) as Array<keyof typeof card.prescription>)
+    .some((key) => card.prescription[key] !== card.effectivePrescription[key]);
+  const addedInstructions = card.effectiveInstructions.slice(card.instructions.length);
+  const addedSuccessCriteria = card.effectiveSuccessCriteria.slice(card.successCriteria.length);
+
+  if (prescriptionChanged) {
+    adjustmentChanges.push({
+      label: "実施量",
+      value: `${card.effectivePrescription.oneRep}／${card.effectivePrescription.repetitions}／${card.effectivePrescription.recovery}`,
+    });
+  }
+  if (card.effectiveSetup !== card.setup) {
+    adjustmentChanges.push({ label: "準備", value: card.effectiveSetup });
+  }
+  if (addedInstructions.length > 0) {
+    adjustmentChanges.push({ label: "進め方", value: addedInstructions.join(" ") });
+  }
+  if (card.effectiveParticipantCue !== card.participantCue) {
+    adjustmentChanges.push({ label: "声かけ", value: card.effectiveParticipantCue });
+  }
+  if (addedSuccessCriteria.length > 0) {
+    adjustmentChanges.push({ label: "できた目安", value: addedSuccessCriteria.join(" ") });
+  }
+  if (card.activeAdjustments.some((label) => label.includes("用具なし"))) {
+    adjustmentChanges.push({ label: "用具", value: "用具を使わずに行う" });
+  }
+  if (card.effectiveTransferConnection !== card.transferConnection) {
+    adjustmentChanges.push({ label: "実際の場面へのつなげ方", value: card.effectiveTransferConnection });
+  }
 
   return (
-    <article className={`task-card task-card--${card.direction}`}>
+    <article className={`task-card task-card--${card.direction}`} data-task-id={card.id}>
       <div className="task-card__eyebrow">
         <span className="direction-label"><DirectionIcon size={18} aria-hidden="true" />{directionLabels[card.direction]}</span>
         <span className="draft-badge">監修前の案</span>
@@ -61,10 +91,33 @@ export function TaskCard({ card, selectedObservedTag, evidence }: TaskCardProps)
         </div>
       ) : null}
 
+      <section className="practice-prescription" aria-label="実施メニュー">
+        <h3>実施メニュー</h3>
+        <dl>
+          <div><dt>やること</dt><dd>{card.effectivePrescription.activity}</dd></div>
+          <div><dt>1回分</dt><dd>{card.effectivePrescription.oneRep}</dd></div>
+          <div><dt>回数</dt><dd>{card.effectivePrescription.repetitions}</dd></div>
+          <div><dt>休み</dt><dd>{card.effectivePrescription.recovery}</dd></div>
+        </dl>
+      </section>
+
+      {adjustmentChanges.length > 0 ? (
+        <section className="adjustment-changes" aria-label="選んだ変更が反映されたところ">
+          <h3>選んだ変更が反映されたところ</h3>
+          <dl>
+            {adjustmentChanges.map((change) => (
+              <div key={`${change.label}-${change.value}`}>
+                <dt>{change.label}</dt>
+                <dd>{change.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : null}
+
       <div className="task-card__quick-grid">
         <div><span>今見えていること</span><strong>{observedTagLabels[selectedObservedTag] ?? selectedObservedTag}</strong></div>
         <div><span>この練習で変えるところ</span><strong>{detailOptionLabels[card.primaryConstraintLabel] ?? card.primaryConstraintLabel}</strong></div>
-        <div><span>回数・距離の目安</span><strong>{card.effectiveSuggestedDose}</strong></div>
       </div>
 
       <div className="cue-panel">

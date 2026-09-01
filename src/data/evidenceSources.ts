@@ -50,7 +50,7 @@ export const evidenceSources: EvidenceSource[] = [
     year: 2026,
     url: "https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2026.1916430/full",
     supports: ["目的が分かる水中課題、条件の変更、質問、繰り返し、本番での実施を組み合わせる授業づくり", "見本を教える方法と、本人に試してもらう方法を使い分ける考え方"],
-    doesNotProve: ["本アプリの72課題それぞれの有効性", "安全上の判断をアプリに任せられること"],
+    doesNotProve: ["本アプリの144課題それぞれの有効性", "安全上の判断をアプリに任せられること"],
     verifiedAt: "2026-08-30",
   },
   {

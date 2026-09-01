@@ -13,7 +13,10 @@ export const constraintModifiers: ConstraintModifier[] = [
       label: "距離・回数を減らしました",
       instructionSuffix: "距離または回数を半分ほどにし、変えるものを1つだけにする。",
       successCriteriaSuffix: "短くした練習で、ねらった動きが2回続けてできる。",
-      suggestedDose: "短い距離または2〜3回を1セット",
+      prescriptionPatch: {
+        repetitions: "2回",
+        recovery: "1回ごと30秒以上",
+      },
       variabilityLevel: "constant",
       presentationOrder: "block",
     },

@@ -6,8 +6,8 @@ import {
   ChevronRight,
   FlaskConical,
   Gauge,
-  RefreshCcw,
   RotateCcw,
+  Shuffle,
   Users,
   Waves,
   Wrench,
@@ -17,24 +17,19 @@ import { MultiChoiceChips, SingleChoiceChips } from "./components/ChoiceChips";
 import { ReferencesView } from "./components/ReferencesView";
 import { TaskCard } from "./components/TaskCard";
 import { evidenceSources } from "./data/evidenceSources";
+import { getAvailableObservedTagOptions, getAvailablePhaseOrDomainOptions } from "./data/formOptions";
 import {
   competitiveLevels,
-  competitiveObservedTagsByPhase,
   competitivePhases,
-  equipmentLabels,
   equipmentOptions,
-  goalLabels,
   goals,
   learnDomains,
   learnLevels,
-  learnObservedTags,
   modes,
-  observedTagLabels,
 } from "./data/options";
 import { adjustTask, matchTasks } from "./engine";
 import type {
   AdjustmentAction,
-  CompetitivePhase,
   EquipmentId,
   GoalId,
   MatchDetails,
@@ -44,7 +39,7 @@ import type {
   TargetLevel,
 } from "./types";
 
-type View = "mode" | "form" | "confirm" | "results" | "references";
+type View = "mode" | "form" | "results" | "references";
 
 interface FormState {
   mode?: Mode;
@@ -111,6 +106,8 @@ function App() {
   const [errors, setErrors] = useState<string[]>([]);
   const [alternativeIndex, setAlternativeIndex] = useState(0);
   const [adjustments, setAdjustments] = useState<AdjustmentAction[]>([]);
+  const [alternativeStatus, setAlternativeStatus] = useState("");
+  const [adjustmentStatus, setAdjustmentStatus] = useState("");
 
   const matchInput = useMemo<MatchInput | undefined>(() => {
     if (!form.mode || !form.goal || !form.phaseOrDomain || !form.observedTag || !form.level || form.equipment.length === 0) {
@@ -132,13 +129,15 @@ function App() {
     [matchInput, alternativeIndex],
   );
 
-  const observedOptions = useMemo(() => {
-    if (form.mode === "competitive") {
-      if (!form.phaseOrDomain) return [];
-      return competitiveObservedTagsByPhase[form.phaseOrDomain as CompetitivePhase] ?? [];
-    }
-    return learnObservedTags;
-  }, [form.mode, form.phaseOrDomain]);
+  const phaseOrDomainOptions = useMemo(
+    () => form.mode ? getAvailablePhaseOrDomainOptions(form.mode, form.level) : [],
+    [form.mode, form.level],
+  );
+
+  const observedOptions = useMemo(
+    () => form.mode ? getAvailableObservedTagOptions(form.mode, form.level, form.phaseOrDomain) : [],
+    [form.mode, form.level, form.phaseOrDomain],
+  );
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -149,6 +148,8 @@ function App() {
     setErrors([]);
     setAlternativeIndex(0);
     setAdjustments([]);
+    setAlternativeStatus("");
+    setAdjustmentStatus("");
     setView("mode");
   };
 
@@ -157,6 +158,8 @@ function App() {
     setErrors([]);
     setAlternativeIndex(0);
     setAdjustments([]);
+    setAlternativeStatus("");
+    setAdjustmentStatus("");
     setView("form");
   };
 
@@ -181,24 +184,42 @@ function App() {
     }));
   };
 
-  const validateAndConfirm = () => {
+  const changeLevel = (level: TargetLevel) => {
+    setForm((current) => ({
+      ...current,
+      level,
+      phaseOrDomain: undefined,
+      observedTag: undefined,
+      details: { ...current.details, specificConditions: [] },
+    }));
+    setAlternativeIndex(0);
+    setAdjustments([]);
+    setAlternativeStatus("");
+    setAdjustmentStatus("");
+  };
+
+  const validateAndShowResults = () => {
     const nextErrors: string[] = [];
     let firstId = "";
     const add = (id: string, message: string) => {
       if (!firstId) firstId = id;
       nextErrors.push(message);
     };
+    if (!form.level) add("level-field", "今の練習段階を選んでください。");
     if (!form.goal) add("goal", "今日の狙いを選んでください。");
     if (!form.phaseOrDomain) add("phase", form.mode === "competitive" ? "練習する場面を選んでください。" : "練習する内容を選んでください。");
     if (!form.observedTag) add("observed", "今、どんな泳ぎになっているか選んでください。");
-    if (!form.level) add("level-field", "今の練習段階を選んでください。");
     if (form.equipment.length === 0) add("equipment-field", "今日使える用具を選んでください。");
     setErrors(nextErrors);
     if (nextErrors.length > 0) {
       document.getElementById(firstId)?.focus();
       return;
     }
-    setView("confirm");
+    setAlternativeIndex(0);
+    setAdjustments([]);
+    setAlternativeStatus("");
+    setAdjustmentStatus("");
+    setView("results");
   };
 
   const showReferences = () => {
@@ -215,6 +236,17 @@ function App() {
           : current.filter((item) => item !== action);
       return [...withoutOpposite, action];
     });
+    const label = actionButtons.find((button) => button.action === action)?.label ?? "選んだ変更";
+    setAdjustmentStatus(`「${label}」を3つの練習に反映しました。各カードの緑の枠で、変わった内容を確認できます。`);
+  };
+
+  const showAlternative = () => {
+    if (!result || result.alternativeCount < 2) return;
+    const nextNumber = ((result.selectedAlternative + 1) % result.alternativeCount) + 1;
+    setAlternativeIndex((current) => current + 1);
+    setAdjustments([]);
+    setAlternativeStatus(`別の3つの練習に入れ替えました（${nextNumber}/${result.alternativeCount}）`);
+    setAdjustmentStatus("");
   };
 
   if (view === "references") {
@@ -280,8 +312,17 @@ function App() {
           ) : null}
 
           <div className="form-card">
+            <div id="level-field" tabIndex={-1}>
+              <SingleChoiceChips
+                legend="1 今の練習段階（必須）"
+                options={form.mode === "competitive" ? competitiveLevels : learnLevels}
+                selected={form.level}
+                onChange={(value) => changeLevel(value as TargetLevel)}
+              />
+            </div>
+
             <label className="select-field" htmlFor="goal">
-              <span><b>1</b> 今日の狙い <em>必須</em></span>
+              <span><b>2</b> 今日の狙い <em>必須</em></span>
               <select id="goal" value={form.goal ?? ""} onChange={(event) => setForm({ ...form, goal: event.target.value as GoalId })}>
                 <option value="">選んでください</option>
                 {goals.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
@@ -289,38 +330,34 @@ function App() {
             </label>
 
             <label className="select-field" htmlFor="phase">
-              <span><b>2</b> {form.mode === "competitive" ? "どの場面を練習しますか？" : "何を練習しますか？"} <em>必須</em></span>
-              <select id="phase" value={form.phaseOrDomain ?? ""} onChange={(event) => changePhaseOrDomain(event.target.value)}>
-                <option value="">選んでください</option>
-                {(form.mode === "competitive" ? competitivePhases : learnDomains).map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
+              <span><b>3</b> {form.mode === "competitive" ? "どの場面を練習しますか？" : "何を練習しますか？"} <em>必須</em></span>
+              <select
+                id="phase"
+                value={form.phaseOrDomain ?? ""}
+                disabled={!form.level}
+                onChange={(event) => changePhaseOrDomain(event.target.value)}
+              >
+                <option value="">{form.level ? "選んでください" : "先に練習段階を選んでください"}</option>
+                {phaseOrDomainOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
               </select>
             </label>
 
             <label className="select-field" htmlFor="observed">
-              <span><b>3</b> 今、どんな泳ぎになっていますか？ <em>必須</em></span>
+              <span><b>4</b> 今、どんな泳ぎになっていますか？ <em>必須</em></span>
               <select
                 id="observed"
                 value={form.observedTag ?? ""}
-                disabled={form.mode === "competitive" && !form.phaseOrDomain}
+                disabled={!form.level || !form.phaseOrDomain}
                 onChange={(event) => setForm({ ...form, observedTag: event.target.value })}
               >
                 <option value="">
-                  {form.mode === "competitive" && !form.phaseOrDomain
-                    ? "先に練習する場面を選んでください"
+                  {!form.phaseOrDomain
+                    ? `先に${form.mode === "competitive" ? "練習する場面" : "練習内容"}を選んでください`
                     : "今見えていることを選んでください"}
                 </option>
-                {observedOptions.map((value) => <option value={value} key={value}>{observedTagLabels[value] ?? value}</option>)}
+                {observedOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
               </select>
             </label>
-
-            <div id="level-field" tabIndex={-1}>
-              <SingleChoiceChips
-                legend="4 今の練習段階（必須）"
-                options={form.mode === "competitive" ? competitiveLevels : learnLevels}
-                selected={form.level}
-                onChange={(value) => setForm({ ...form, level: value as TargetLevel })}
-              />
-            </div>
 
             <div id="equipment-field" tabIndex={-1}>
               <MultiChoiceChips
@@ -341,33 +378,7 @@ function App() {
 
           <div className="sticky-action-spacer" />
           <div className="sticky-action">
-            <button type="button" className="primary-button" onClick={validateAndConfirm}>
-              入力内容を確認する <ChevronRight size={20} aria-hidden="true" />
-            </button>
-          </div>
-        </main>
-      ) : null}
-
-      {view === "confirm" && matchInput ? (
-        <main className="page-shell confirm-page" id="main-content">
-          <button type="button" className="text-button" onClick={() => setView("form")}>
-            <ArrowLeft size={18} aria-hidden="true" /> 入力へ戻る
-          </button>
-          <p className="section-kicker">入力内容</p>
-          <h1>選んだ内容を確認</h1>
-          <p className="lead">この内容に合う練習を、3つの目的に分けて表示します。</p>
-          <dl className="summary-card">
-            <div><dt>使う場面</dt><dd>{modeLabel(matchInput.mode)}</dd></div>
-            <div><dt>今日の狙い</dt><dd>{goalLabels[matchInput.goal]}</dd></div>
-            <div><dt>練習する場面・内容</dt><dd>{phaseLabel(matchInput.mode, matchInput.phaseOrDomain)}</dd></div>
-            <div><dt>今見えていること</dt><dd>{observedTagLabels[matchInput.observedTag] ?? matchInput.observedTag}</dd></div>
-            <div><dt>今の練習段階</dt><dd>{levelLabel(matchInput.mode, matchInput.level)}</dd></div>
-            <div><dt>今日使える用具</dt><dd>{matchInput.equipment.map((item) => equipmentLabels[item]).join("・")}</dd></div>
-            <div><dt>追加で選んだこと</dt><dd>{Object.values(matchInput.details).filter((value) => Array.isArray(value) ? value.length > 0 : Boolean(value)).length}項目</dd></div>
-          </dl>
-          <div className="confirm-actions">
-            <button type="button" className="secondary-button" onClick={() => setView("form")}>入力を編集</button>
-            <button type="button" className="primary-button" onClick={() => setView("results")}>
+            <button type="button" className="primary-button" onClick={validateAndShowResults}>
               3つの練習を見る <ChevronRight size={20} aria-hidden="true" />
             </button>
           </div>
@@ -392,7 +403,24 @@ function App() {
           ) : null}
 
           {result.cards.length === 3 ? (
-            <div className="results-list">
+            <section className="alternative-panel" aria-label="別の練習を表示">
+              <div>
+                <strong>この3つが合わないとき</strong>
+                <span>入力した条件は変えず、別の組み合わせを表示します。</span>
+              </div>
+              {result.alternativeCount > 1 ? (
+                <button type="button" className="secondary-button" onClick={showAlternative}>
+                  <Shuffle size={19} aria-hidden="true" /> 別の3つの練習に入れ替える
+                </button>
+              ) : (
+                <p>この条件で表示できる練習は、この3つです。</p>
+              )}
+              <p className="alternative-status" role="status" aria-live="polite">{alternativeStatus}</p>
+            </section>
+          ) : null}
+
+          {result.cards.length === 3 ? (
+            <div className="results-list" id="result-cards">
               {result.cards.map((template) => {
                 const card = adjustTask(template, adjustments, matchInput.equipment);
                 return (
@@ -417,13 +445,6 @@ function App() {
             <p className="section-kicker">練習を調整</p>
             <h2 id="adjustment-heading">人数や用具に合わせて練習を変える</h2>
             <div className="action-grid">
-              <button
-                type="button"
-                className="action-button action-button--wide"
-                onClick={() => { setAlternativeIndex((current) => current + 1); setAdjustments([]); }}
-              >
-                <RefreshCcw size={19} aria-hidden="true" /> 今の入力で違う練習を見る
-              </button>
               {actionButtons.map(({ action, label, icon: Icon }) => (
                 <button type="button" className="action-button" onClick={() => applyAdjustment(action)} key={action}>
                   <Icon size={19} aria-hidden="true" /> {label}
@@ -431,6 +452,13 @@ function App() {
                 </button>
               ))}
             </div>
+            {adjustmentStatus ? (
+              <div className="adjustment-status" role="status" aria-live="polite">
+                <Check size={18} aria-hidden="true" />
+                <span>{adjustmentStatus}</span>
+                <a href="#result-cards">変更後のカードを見る</a>
+              </div>
+            ) : null}
           </section>
 
           <div className="result-footer-actions">

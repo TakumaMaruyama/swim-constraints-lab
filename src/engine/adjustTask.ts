@@ -51,7 +51,7 @@ export const adjustTask = (
   const effectiveInstructions = [...template.instructions];
   let effectiveParticipantCue = template.participantCue;
   const effectiveSuccessCriteria = [...template.successCriteria];
-  let effectiveSuggestedDose = template.suggestedDose;
+  let effectivePrescription = { ...template.prescription };
   const available: EquipmentId[] | undefined = availableEquipment?.filter((item) => item !== "none");
   let effectiveEquipment: EquipmentId[] = available
     ? unique([
@@ -71,7 +71,9 @@ export const adjustTask = (
     if (adjustment.instructionSuffix) effectiveInstructions.push(adjustment.instructionSuffix);
     if (adjustment.participantCue) effectiveParticipantCue = adjustment.participantCue;
     if (adjustment.successCriteriaSuffix) effectiveSuccessCriteria.push(adjustment.successCriteriaSuffix);
-    if (adjustment.suggestedDose) effectiveSuggestedDose = adjustment.suggestedDose;
+    if (adjustment.prescriptionPatch) {
+      effectivePrescription = { ...effectivePrescription, ...adjustment.prescriptionPatch };
+    }
     if (adjustment.equipmentOverride) effectiveEquipment = adjustment.equipmentOverride;
     if (adjustment.variabilityLevel) variabilityLevel = adjustment.variabilityLevel;
     if (adjustment.presentationOrder) presentationOrder = adjustment.presentationOrder;
@@ -89,7 +91,7 @@ export const adjustTask = (
     effectiveInstructions,
     effectiveParticipantCue,
     effectiveSuccessCriteria,
-    effectiveSuggestedDose,
+    effectivePrescription,
     effectiveEquipment,
     effectiveTransferConnection,
   };

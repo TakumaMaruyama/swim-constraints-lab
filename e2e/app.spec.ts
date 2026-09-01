@@ -18,10 +18,10 @@ function monitorRuntime(page: Page) {
 
 async function chooseCompetitiveBasics(page: Page) {
   await page.getByRole("button", { name: /競泳版/ }).click();
+  await page.getByRole("button", { name: /^導入/ }).click();
   await page.getByLabel(/今日の狙い/).selectOption("firstSuccess");
   await page.locator("#phase").selectOption("start");
   await page.getByLabel(/今、どんな泳ぎになっていますか/).selectOption("合図後の初動が遅い");
-  await page.getByRole("button", { name: /^導入/ }).click();
 }
 
 test("競泳版で入力から3方向・根拠・静的変更まで操作できる", async ({ page }) => {
@@ -30,8 +30,6 @@ test("競泳版で入力から3方向・根拠・静的変更まで操作でき�
 
   await expect(page.getByText("AIは使用しません。")).toBeVisible();
   await chooseCompetitiveBasics(page);
-  await page.getByRole("button", { name: /入力内容を確認する/ }).click();
-  await expect(page.getByRole("heading", { name: "選んだ内容を確認" })).toBeVisible();
   await page.getByRole("button", { name: /3つの練習を見る/ }).click();
 
   await expect(page.locator("article.task-card")).toHaveCount(3);
@@ -41,6 +39,8 @@ test("競泳版で入力から3方向・根拠・静的変更まで操作でき�
     "やり方を比べる",
     "レース・普段の泳ぎで試す",
   ]);
+  await expect(page.locator(".practice-prescription")).toHaveCount(3);
+  await expect(page.locator(".practice-prescription dt")).toContainText(["やること", "1回分", "回数", "休み"]);
 
   await page.locator("article.task-card").first().getByText("練習の進め方・見るポイント").click();
   await expect(page.locator("article.task-card").first().getByText("用具の役割")).toBeVisible();
@@ -49,6 +49,8 @@ test("競泳版で入力から3方向・根拠・静的変更まで操作でき�
 
   await page.getByRole("button", { name: "距離・回数を減らす" }).click();
   await expect(page.getByText("距離・回数を減らしました")).toHaveCount(3);
+  await expect(page.locator(".adjustment-changes")).toHaveCount(3);
+  await expect(page.getByRole("link", { name: "変更後のカードを見る" })).toBeVisible();
   await page.getByRole("button", { name: "声かけを変える" }).click();
   await expect(page.getByText("声かけを質問に変えました")).toHaveCount(3);
 
@@ -63,11 +65,12 @@ test("習い事水泳版でも用具なしで3方向を表示し、戻ると入�
   await page.goto("/");
 
   await page.getByRole("button", { name: /習い事水泳版/ }).click();
+  await expect(page.getByLabel(/何を練習しますか/)).toBeDisabled();
+  await page.getByRole("button", { name: /^初級/ }).click();
+  await expect(page.getByLabel(/何を練習しますか/).locator("option", { hasText: "クロール" })).toHaveCount(0);
   await page.getByLabel(/今日の狙い/).selectOption("confidence");
   await page.getByLabel(/何を練習しますか/).selectOption("水慣れ");
   await page.getByLabel(/今、どんな泳ぎになっていますか/).selectOption("水に入ることを嫌がる");
-  await page.getByRole("button", { name: /^初級/ }).click();
-  await page.getByRole("button", { name: /入力内容を確認する/ }).click();
   await page.getByRole("button", { name: /3つの練習を見る/ }).click();
 
   await expect(page.locator("article.task-card")).toHaveCount(3);
@@ -86,10 +89,10 @@ test("必須エラーと主要操作をキーボードで利用できる", async
   await expect(page.getByRole("link", { name: "本文へ移動" })).toBeFocused();
   await page.getByRole("button", { name: /競泳版/ }).focus();
   await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: /入力内容を確認する/ }).click();
+  await page.getByRole("button", { name: /3つの練習を見る/ }).click();
 
   await expect(page.getByRole("alert")).toContainText("今日の狙いを選んでください。");
-  await expect(page.getByLabel(/今日の狙い/)).toBeFocused();
+  await expect(page.locator("#level-field")).toBeFocused();
   expect(runtime.errors).toEqual([]);
   expect(runtime.externalRequests).toEqual([]);
 });
@@ -101,6 +104,7 @@ test("競泳の観察事実は選択した局面だけに絞られる", async ({
   const observed = page.getByLabel(/今、どんな泳ぎになっていますか/);
   await expect(observed).toBeDisabled();
 
+  await page.getByRole("button", { name: /^導入/ }).click();
   await page.locator("#phase").selectOption("start");
   await expect(observed).toBeEnabled();
   await expect(observed.locator("option", { hasText: "合図から動き出すまでが遅い" })).toHaveCount(1);

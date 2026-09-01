@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { evidenceSources } from "../data/evidenceSources";
 import { constraintModifiers } from "../data/constraintModifiers";
-import { competitiveObservedTagsByPhase, learnDomains as learnDomainOptions } from "../data/options";
+import { competitiveObservedTagsByPhase } from "../data/options";
+import { getAvailableObservedTagOptions, getAvailablePhaseOrDomainOptions, learnDomainsByLevel } from "../data/formOptions";
 import { taskTemplates } from "../data/taskTemplates";
 import { matchTasks } from "../engine";
 import type { CardDirection, CompetitivePhase, LearnToSwimLevel, Mode, TaskTemplate } from "../types";
@@ -13,11 +14,15 @@ const learnLevels: LearnToSwimLevel[] = ["beginner", "intermediate", "advanced"]
 const tasksForMode = (mode: Mode) => taskTemplates.filter((task) => task.mode === mode);
 const tasksForDirection = (tasks: TaskTemplate[], direction: CardDirection) =>
   tasks.filter((task) => task.direction === direction);
+const details = {
+  currentStates: [], individualConstraints: [], taskConstraints: [], environmentConstraints: [],
+  implementationConditions: [], specificConditions: [],
+};
 
 describe("task template catalog", () => {
-  it("contains at least 72 unique templates with 36 or more in each mode", () => {
-    expect(taskTemplates.length).toBeGreaterThanOrEqual(72);
-    expect(tasksForMode("competitive")).toHaveLength(36);
+  it("contains 144 unique templates with 108 competitive and 36 learn-to-swim tasks", () => {
+    expect(taskTemplates).toHaveLength(144);
+    expect(tasksForMode("competitive")).toHaveLength(108);
     expect(tasksForMode("learnToSwim")).toHaveLength(36);
     expect(new Set(taskTemplates.map((task) => task.id)).size).toBe(taskTemplates.length);
     expect(new Set(taskTemplates.map((task) => task.title)).size).toBe(taskTemplates.length);
@@ -28,11 +33,18 @@ describe("task template catalog", () => {
 
     for (const phase of competitivePhases) {
       const phaseTasks = competitive.filter((task) => task.phases.includes(phase));
-      expect(phaseTasks).toHaveLength(6);
+      expect(phaseTasks).toHaveLength(18);
       for (const direction of directions) {
-        expect(tasksForDirection(phaseTasks, direction)).toHaveLength(2);
+        expect(tasksForDirection(phaseTasks, direction)).toHaveLength(6);
+        for (const level of ["intro", "develop", "race"] as const) {
+          expect(tasksForDirection(phaseTasks.filter((task) => task.levels.includes(level)), direction)).toHaveLength(2);
+        }
       }
     }
+  });
+
+  it("assigns every competitive template to exactly one level", () => {
+    for (const task of tasksForMode("competitive")) expect(task.levels).toHaveLength(1);
   });
 
   it("offers only observed facts that exist in templates for each competitive phase", () => {
@@ -68,6 +80,7 @@ describe("task template catalog", () => {
       expect(task.evidenceNote).toContain("監修前の案");
       expect(task.evidenceIds.length).toBeGreaterThan(0);
       expect(task.evidenceIds.every((id) => evidenceIds.has(id))).toBe(true);
+      expect(Object.values(task.prescription).every((value) => value.trim() !== "")).toBe(true);
     }
   });
 
@@ -100,6 +113,30 @@ describe("task template catalog", () => {
     }
   });
 
+  it("keeps no-equipment learn menus free of portable-equipment dependencies", () => {
+    const portableEquipmentTerms = [
+      "ビート板", "ヌードル", "マット", "フープ", "色マーカー", "浮く物",
+      "沈む物", "フィン", "パドル", "プルブイ", "シュノーケル", "抵抗具",
+      "四色", "青・赤", "色を置く",
+    ];
+
+    for (const task of tasksForMode("learnToSwim")) {
+      expect(task.requiredEquipment, task.id).toEqual([]);
+      const coreMenu = [
+        task.title,
+        task.summary,
+        ...Object.values(task.prescription),
+        task.setup,
+        ...task.instructions,
+        task.participantCue,
+        ...task.successCriteria,
+      ].join("\n");
+      for (const term of portableEquipmentTerms) {
+        expect(coreMenu, `${task.id} depends on ${term}`).not.toContain(term);
+      }
+    }
+  });
+
   it("keeps coach-facing task copy free of known broken or AI-like wording", () => {
     const forbiddenTerms = [
       "監修前ドラフト", "舟", "星", "三つの駅", "三色の島", "ミッション", "疲れした",
@@ -109,7 +146,7 @@ describe("task template catalog", () => {
     const displayFields = [
       "title", "summary", "primaryConstraintLabel", "fixedConditions", "setup", "instructions",
       "participantCue", "informationToUse", "permittedSolutions", "participantChoices", "successCriteria",
-      "coachObservation", "suggestedDose", "easier", "harder", "noEquipment", "largeGroup",
+      "coachObservation", "easier", "harder", "noEquipment", "largeGroup",
       "transferConnection", "evidenceNote",
     ] as const;
 
@@ -117,6 +154,7 @@ describe("task template catalog", () => {
       const displayCopy = displayFields
         .map((field) => task[field])
         .flat()
+        .concat(Object.values(task.prescription))
         .join("\n");
       for (const forbiddenTerm of forbiddenTerms) {
         expect(displayCopy, `${task.id} contains forbidden wording: ${forbiddenTerm}`).not.toContain(forbiddenTerm);
@@ -131,23 +169,66 @@ describe("task template catalog", () => {
   });
 
   it("can return all three directions without portable equipment for every selectable phase or skill", () => {
-    const details = {
-      currentStates: [], individualConstraints: [], taskConstraints: [], environmentConstraints: [],
-      implementationConditions: [], specificConditions: [],
-    };
+    for (const [mode, levels] of [["competitive", ["intro", "develop", "race"]], ["learnToSwim", ["beginner", "intermediate", "advanced"]] ] as const) {
+      for (const level of levels) {
+        const options = getAvailablePhaseOrDomainOptions(mode, level);
+        expect(options.length).toBeGreaterThan(0);
+        for (const option of options) {
+          const candidates = tasksForMode(mode).filter((task) => task.levels.includes(level) &&
+            (mode === "competitive" ? task.phases.includes(option.value as CompetitivePhase) : task.domains.includes(option.value)) &&
+            task.requiredEquipment.length === 0);
+          const observed = candidates.flatMap((task) => task.observedTags)[0] ?? getAvailableObservedTagOptions(mode, level, option.value)[0]?.value;
+          expect(observed, `${mode}/${level}/${option.value} has no observed option`).toBeDefined();
+          expect(matchTasks({
+            mode, goal: mode === "competitive" ? "firstSuccess" : "confidence", phaseOrDomain: option.value,
+            observedTag: observed!, level, equipment: ["none"], details,
+          }).cards).toHaveLength(3);
+        }
+      }
+    }
+  });
 
-    for (const phase of competitivePhases) {
-      expect(matchTasks({
-        mode: "competitive", goal: "firstSuccess", phaseOrDomain: phase,
-        observedTag: "合図後の初動が遅い", level: "intro", equipment: ["none"], details,
-      }).cards).toHaveLength(3);
+  it("returns different competitive task IDs when only the level changes", () => {
+    const ids = ["intro", "develop", "race"].map((level) => {
+      const observed = getAvailableObservedTagOptions("competitive", level as "intro" | "develop" | "race", "start")[0]!;
+      return matchTasks({ mode: "competitive", goal: "firstSuccess", phaseOrDomain: "start", observedTag: observed.value, level: level as "intro" | "develop" | "race", equipment: ["none"], details }).cards.map((card) => card.id);
+    });
+    expect(new Set(ids.flat())).toHaveLength(9);
+  });
+
+  it("keeps every competitive menu synchronized with its structured amount", () => {
+    const competitive = tasksForMode("competitive");
+    expect(new Set(competitive.map((task) => task.prescription.activity))).toHaveLength(108);
+
+    for (const task of competitive) {
+      expect(task.instructions.join("\n"), task.id).toContain(task.prescription.oneRep);
+      expect(task.successCriteria.join("\n"), task.id).toContain(task.prescription.oneRep);
     }
 
-    for (const domain of learnDomainOptions) {
-      expect(matchTasks({
-        mode: "learnToSwim", goal: "confidence", phaseOrDomain: domain.value,
-        observedTag: "水に入ることを嫌がる", level: "beginner", equipment: ["none"], details,
-      }).cards).toHaveLength(3);
+    const startAmounts = ["intro", "develop", "race"].map((level) =>
+      competitive.find((task) => task.id === `comp-start-establish-01-${level}`)?.prescription.oneRep,
+    );
+    expect(startAmounts).toEqual(["スタートから5mまで", "スタートから10mまで", "スタートから15mまで"]);
+  });
+
+  it("changes the learn-to-swim candidates when the selected skill changes", () => {
+    for (const level of learnLevels) {
+      const options = getAvailablePhaseOrDomainOptions("learnToSwim", level);
+      expect(options.map((option) => option.value).sort()).toEqual([...learnDomainsByLevel[level]].sort());
+      const taskSets = options.map((option) => {
+        const observed = getAvailableObservedTagOptions("learnToSwim", level, option.value)[0]!.value;
+        return matchTasks({
+          mode: "learnToSwim", goal: "confidence", phaseOrDomain: option.value,
+          observedTag: observed, level, equipment: ["none"], details,
+        }).cards.map((task) => task.id).sort().join("|");
+      });
+      expect(new Set(taskSets).size, `${level} skills should not all show the same cards`).toBeGreaterThan(1);
+    }
+  });
+
+  it("keeps every competitive exploration task as an actual comparison", () => {
+    for (const task of tasksForMode("competitive").filter((item) => item.direction === "explore")) {
+      expect(task.instructions.join("\n"), task.id).toMatch(/2つ|2通り|比べ/);
     }
   });
 });

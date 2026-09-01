@@ -99,13 +99,21 @@ export type AdjustmentAction =
   | "moreExplore"
   | "moreTransfer";
 
+/** The concrete amount for one drill, kept separate from its coaching copy. */
+export interface PracticePrescription {
+  activity: string;
+  oneRep: string;
+  repetitions: string;
+  recovery: string;
+}
+
 export interface TaskAdjustment {
   label: string;
   setupPrefix?: string;
   instructionSuffix?: string;
   participantCue?: string;
   successCriteriaSuffix?: string;
-  suggestedDose?: string;
+  prescriptionPatch?: Partial<PracticePrescription>;
   variabilityLevel?: VariabilityLevel;
   presentationOrder?: PresentationOrder;
   equipmentOverride?: EquipmentId[];
@@ -138,7 +146,7 @@ export interface TaskTemplate {
   participantChoices: string[];
   successCriteria: string[];
   coachObservation: string;
-  suggestedDose: string;
+  prescription: PracticePrescription;
   variabilityLevel: VariabilityLevel;
   presentationOrder: PresentationOrder;
   cueStyle: CueStyle;
@@ -216,7 +224,7 @@ export interface RenderedTaskCard extends TaskTemplate {
   effectiveInstructions: string[];
   effectiveParticipantCue: string;
   effectiveSuccessCriteria: string[];
-  effectiveSuggestedDose: string;
+  effectivePrescription: PracticePrescription;
   effectiveEquipment: EquipmentId[];
   effectiveTransferConnection: string;
 }
