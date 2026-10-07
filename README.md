@@ -46,6 +46,7 @@ src/engine/      決定論的な選択・変更ロジック
 src/types/       データモデル
 src/tests/       単体・データ・画面フローテスト
 e2e/             Playwright実ブラウザテスト
+server/          本番用静的配信サーバーとHTTPテスト
 docs/            コンテンツと根拠の運用方針
 ```
 
@@ -61,7 +62,7 @@ npm run test:e2e
 npm run build
 ```
 
-開発サーバーは `http://localhost:5000` で起動します。PlaywrightのE2E確認は環境にブラウザがある場合に `npm run test:e2e` で実行できます。
+開発サーバーは `http://localhost:5000` で起動します。`npm test` はアプリと本番配信のHTTPテストを実行します。PlaywrightのE2E確認は環境にブラウザがある場合に `npm run test:e2e` で実行できます。E2Eはビルド後の本番サーバー（port 4173）でPC・スマホの操作を確認します。
 
 ## Replit
 
@@ -71,7 +72,14 @@ Previewは次で起動します。
 npm run dev -- --host 0.0.0.0
 ```
 
-Static Publishingの設定は、ビルドコマンドを `npm run build`、公開ディレクトリを `dist` としてください。
+既存のAutoscale Publishing（`deploymentTarget = "cloudrun"`）を使います。`.replit` の本番ビルドは `npm run build`、起動は `npm run start` です。マシンサイズ・インスタンス上限など、既存のサービス設定は変更しません。
+
+```bash
+npm run build
+npm run start
+```
+
+Node標準機能で `dist` だけを `0.0.0.0` に配信します。ポートは環境変数 `PORT`、未指定時は5000です。buildのない状態では起動を中止します。HTMLは毎回再検証し、ハッシュ付きassetsだけを長期キャッシュします。画面への直接アクセスはHTMLへ戻し、存在しないassets・APIパスは404を返します。Secret・外部API・DBの追加は不要です。
 
 ## 資料と課題の追加
 
