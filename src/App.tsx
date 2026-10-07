@@ -13,6 +13,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { DetailsPanel } from "./components/DetailsPanel";
+import { LessonBuilder } from "./components/LessonBuilder";
 import { MultiChoiceChips, SingleChoiceChips } from "./components/ChoiceChips";
 import { ReferencesView } from "./components/ReferencesView";
 import { TaskCard } from "./components/TaskCard";
@@ -39,7 +40,7 @@ import type {
   TargetLevel,
 } from "./types";
 
-type View = "mode" | "form" | "results" | "references";
+type View = "mode" | "form" | "results" | "references" | "lesson";
 
 interface FormState {
   mode?: Mode;
@@ -101,6 +102,7 @@ function levelLabel(mode: Mode | undefined, value?: string) {
 
 function App() {
   const [view, setView] = useState<View>("mode");
+  const [lessonStarted, setLessonStarted] = useState(false);
   const [returnView, setReturnView] = useState<View>("mode");
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<string[]>([]);
@@ -249,14 +251,10 @@ function App() {
     setAdjustmentStatus("");
   };
 
-  if (view === "references") {
-    return <ReferencesView sources={evidenceSources} onBack={() => setView(returnView)} />;
-  }
-
   return (
-    <div className="app-frame">
+    <div className={`app-frame${view === "lesson" ? " app-frame--lesson" : ""}`}>
       <a className="skip-link" href="#main-content">本文へ移動</a>
-      <header className="app-header">
+      <header className="app-header" hidden={view === "references"}>
         <button type="button" className="brand-button" onClick={resetAll} aria-label="最初の画面へ戻る">
           <span className="brand-mark"><Waves aria-hidden="true" /></span>
           <span><strong>Swim Constraints Lab</strong><small>今の泳ぎから練習を選ぶ</small></span>
@@ -286,6 +284,10 @@ function App() {
               </button>
             ))}
           </div>
+          <section className="lesson-entry">
+            <div><h2>スタッフ用のレッスン作成</h2><p>人数・レベル・時間・狙いから、1回分のレッスンを組み立てて印刷できます。</p></div>
+            <button type="button" className="primary-button" onClick={() => { setLessonStarted(true); setView("lesson"); }}>レッスンを組み立てる</button>
+          </section>
           <p className="draft-callout">収録した練習はすべて監修前の下書きです。最後は現場の指導者が判断してください。</p>
         </main>
       ) : null}
@@ -468,7 +470,10 @@ function App() {
         </main>
       ) : null}
 
-      <footer className="app-footer">
+      {lessonStarted ? <LessonBuilder active={view === "lesson"} onBack={() => setView("mode")} /> : null}
+      {view === "references" ? <ReferencesView sources={evidenceSources} onBack={() => setView(returnView)} /> : null}
+
+      <footer className="app-footer" hidden={view === "references"}>
         <p>監修前の案 · AI・外部API不使用 · 診断や唯一の正解を提示しません</p>
       </footer>
     </div>
