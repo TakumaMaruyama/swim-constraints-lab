@@ -38,8 +38,8 @@ export const learnDomainsByLevel: Record<LearnToSwimLevel, string[]> = {
 const hasAllDirections = (templates: TaskTemplate[]) =>
   directions.every((direction) => templates.some((template) => template.direction === direction));
 
-const templatesFor = (mode: Mode, level: TargetLevel) =>
-  taskTemplates.filter((template) => template.mode === mode && template.levels.includes(level));
+const templatesFor = (mode: Mode, level: TargetLevel, catalog: TaskTemplate[]) =>
+  catalog.filter((template) => template.mode === mode && template.levels.includes(level));
 
 /**
  * Returns only fields that can produce all three card directions at the selected
@@ -48,9 +48,10 @@ const templatesFor = (mode: Mode, level: TargetLevel) =>
 export const getAvailablePhaseOrDomainOptions = (
   mode: Mode,
   level?: TargetLevel,
+  catalog = taskTemplates,
 ): SelectOption[] => {
   if (!level) return [];
-  const templates = templatesFor(mode, level);
+  const templates = templatesFor(mode, level, catalog);
   const source = mode === "competitive"
     ? competitivePhases
     : learnDomains.filter((option) => learnDomainsByLevel[level as LearnToSwimLevel]?.includes(option.value));
@@ -70,10 +71,11 @@ export const getAvailableObservedTagOptions = (
   mode: Mode,
   level?: TargetLevel,
   phaseOrDomain?: string,
+  catalog = taskTemplates,
 ): SelectOption[] => {
   if (!level || !phaseOrDomain) return [];
 
-  const matching = templatesFor(mode, level).filter((template) =>
+  const matching = templatesFor(mode, level, catalog).filter((template) =>
     mode === "competitive"
       ? template.phases.includes(phaseOrDomain as CompetitivePhase)
       : template.domains.includes(phaseOrDomain),

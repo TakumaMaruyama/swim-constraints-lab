@@ -161,8 +161,8 @@ const isHardMatch = (template: TaskTemplate, input: MatchInput) =>
   template.levels.includes(input.level) &&
   matchesRequiredEquipment(template, input.equipment);
 
-const getCandidates = (input: MatchInput, relaxed: ReadonlySet<RelaxationStep>) =>
-  taskTemplates
+const getCandidates = (input: MatchInput, relaxed: ReadonlySet<RelaxationStep>, catalog: TaskTemplate[]) =>
+  catalog
     .filter((template) => isHardMatch(template, input))
     .filter((template) => matchesPreferences(template, input, relaxed))
     .map((template) => scoreTemplate(template, input))
@@ -230,15 +230,15 @@ const orderAlternatives = (combinations: CandidateCombination[]) => {
  * Returns one task in each direction. Matching is deliberately deterministic:
  * identical input always produces the same card order and alternative cycle.
  */
-export const matchTasks = (input: MatchInput, alternativeIndex = 0): MatchResult => {
+export const matchTasks = (input: MatchInput, alternativeIndex = 0, catalog = taskTemplates): MatchResult => {
   const relaxed = new Set<RelaxationStep>();
-  let candidates = getCandidates(input, relaxed);
+  let candidates = getCandidates(input, relaxed, catalog);
   let combinations = makeCombinations(candidates);
 
   for (const step of relaxationOrderFor(input)) {
     if (combinations.length > 0) break;
     relaxed.add(step);
-    candidates = getCandidates(input, relaxed);
+    candidates = getCandidates(input, relaxed, catalog);
     combinations = makeCombinations(candidates);
   }
 
